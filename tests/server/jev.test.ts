@@ -34,7 +34,7 @@ function stub(body: unknown) {
 describe("jev questions and state", () => {
   it("asks the three spec questions plus unknown_speaker in one request", () => {
     const q = jevQuestions(talkshow);
-    expect(Object.keys(q)).toEqual(["type", "speaker", "shot", "unknown_speaker"]);
+    expect(Object.keys(q)).toEqual(["type", "speaker", "shot", "general_advice", "quote_is_line", "unknown_speaker"]);
     expect(Object.keys(q.type.criteria)).toEqual(["dialogue", "action", "visual", "cut", "cue", "note"]);
     expect(Object.keys(q.speaker.criteria)).toEqual(["anna", "martins", "laura", NO_PERSON]);
     expect(Object.keys(q.shot.criteria)).toEqual(["close", "medium", "wide", NO_SHOT]);
@@ -117,6 +117,34 @@ describe("jevClassifySegment with a stubbed API", () => {
     expect(meta?.inputTokens).toBe(1000);
     expect(meta?.costUsd).toBeCloseTo((1000 * JEV_USD_PER_MTOK) / 1e6);
     expect(meta?.ms).toBeGreaterThanOrEqual(0);
+  });
+
+  it("makes a line with quoted words for the cast dialogue, with the words as its text", async () => {
+    const seg = "Jamie could say “Wait, can we pull that up?” and then the director switches";
+    const { call } = stub(answers({ type: choice("note", 0.6), speaker: choice("martins"), quote_is_line: { type: "noul", noul: 0.97 } }));
+    const out = await jevClassifySegment({ ...req, segment: seg }, call);
+    expect(out).toMatchObject({ type: "dialogue", text: "Wait, can we pull that up?", speakerId: "martins" });
+    expect((out.confidence as { type: number }).type).toBeCloseTo(0.97);
+  });
+
+  it("makes general advice an off-air note", async () => {
+    const { call } = stub(answers({ type: choice("visual", 0.9), general_advice: { type: "noul", noul: 0.9 } }));
+    const out = await jevClassifySegment({ ...req, segment: "Maybe the screen should slide in rather than appear" }, call);
+    expect(out.type).toBe("note");
+  });
+
+  it("flags an unsure advice answer for review, keeping Jev's type", async () => {
+    const { call } = stub(answers({ type: choice("visual", 0.95), general_advice: { type: "noul", noul: 0.5 } }));
+    const v = validate(await jevClassifySegment({ ...req, segment: "Could zoom in on the graph" }, call), "Could zoom in on the graph", talkshow);
+    expect(v.type).toBe("visual");
+    expect(v.confidence.type).toBeLessThanOrEqual(0.6);
+    expect(v.needsReview).toBe(true);
+  });
+
+  it("keeps Jev's type when quotes are not lines and it is not advice", async () => {
+    const { call } = stub(answers({ type: choice("visual", 0.9), quote_is_line: { type: "noul", noul: 0.05 }, general_advice: { type: "noul", noul: 0.05 } }));
+    const out = await jevClassifySegment({ ...req, segment: "Could add labels like “Before” and “After”" }, call);
+    expect(out).toMatchObject({ type: "visual", text: "Could add labels like “Before” and “After”" });
   });
 
   it("throws on a body that is not a System One response, so the row is flagged", async () => {

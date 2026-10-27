@@ -1,11 +1,11 @@
 import { TypeSafeClient, type SystemOneRequest } from "@typesafe-ai/sdk";
 import { z } from "zod";
-import { extractText } from "../src/classify/extract";
+import { extractText, quotedText } from "../src/classify/extract";
 import type { RawClassification } from "../src/classify/types";
 import { JEV_USD_PER_MTOK, UNKNOWN_SPEAKER_THRESHOLD } from "../src/model/constants";
 import type { ConfidenceField } from "../src/model/types";
 import type { ClassifyRequest } from "./prompt";
-import { jevQuestions, jevState, NO_PERSON, NO_SHOT } from "./jev-questions";
+import { ADVICE_NO, ADVICE_YES, jevQuestions, jevState, NO_PERSON, NO_SHOT, QUOTE_YES } from "./jev-questions";
 
 /** Pinned, so thresholds tuned on one version do not move when the alias does. */
 export const DEFAULT_JEV_MODEL = "jev-1.14.0";
@@ -71,13 +71,35 @@ export async function jevClassifySegment(req: ClassifyRequest, systemOne: System
     failed.push("speakerId");
   }
 
+  // The truth table for briefs: Jev judges, code decides.
+  //   quoted words for the cast  > QUOTE_YES       → dialogue, the text is the quoted words
+  //   general advice             > ADVICE_YES      → note (off air)
+  //   general advice    ADVICE_NO..ADVICE_YES      → Jev's type, flagged for review
+  //   otherwise                                    → Jev's type
+  const quote = NoulAnswer.safeParse(res.answers.quote_is_line);
+  const advice = NoulAnswer.safeParse(res.answers.general_advice);
+  const quoted = quotedText(req.segment);
+  let rowType: string | null = type?.choice ?? null;
+  let typeConfidence = type?.confidence ?? 0;
+  let text = extractText(req.segment);
+  if (quote.success && quote.data.noul > QUOTE_YES && quoted) {
+    rowType = "dialogue";
+    typeConfidence = quote.data.noul;
+    text = quoted;
+  } else if (advice.success && advice.data.noul > ADVICE_YES) {
+    rowType = "note";
+    typeConfidence = advice.data.noul;
+  } else if (advice.success && advice.data.noul >= ADVICE_NO) {
+    typeConfidence = Math.min(typeConfidence, 0.6);
+  }
+
   const inputTokens = res.usage?.input_tokens ?? null;
   return {
-    type: type?.choice ?? null,
+    type: rowType,
     speakerId: !speaker || speaker.choice === NO_PERSON ? null : speaker.choice,
-    text: extractText(req.segment),
+    text,
     shot: !shot || shot.choice === NO_SHOT ? null : shot.choice,
-    confidence: { type: type?.confidence ?? 0, speakerId: speaker?.confidence ?? 0, shot: shot?.confidence ?? 0 },
+    confidence: { type: typeConfidence, speakerId: speaker?.confidence ?? 0, shot: shot?.confidence ?? 0 },
     failed,
     meta: {
       ms,

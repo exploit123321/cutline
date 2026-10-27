@@ -34,6 +34,20 @@ const KINDS: [RegExp, ScreenKind][] = [
 
 const cap = (s: string) => (s ? s[0]?.toUpperCase() + s.slice(1) : s);
 
+/** A plain line longer than this is a note about a screen, not its title. */
+const TITLE_MAX = 48;
+const KIND_TITLE: Record<ScreenKind, string> = {
+  article: "Article",
+  chart: "The numbers",
+  clip: "Video clip",
+  website: "website.example",
+  poll: "Live poll",
+  compare: "Side by side",
+  split: "New topic",
+  recap: "Recap",
+  image: "On screen",
+};
+
 /** "article | Night buses carry…" or plain "budget chart full screen" → kind, title, items. */
 export function screenContent(text: string): ScreenContent {
   const parts = text.split("|").map((p) => p.trim()).filter(Boolean);
@@ -41,6 +55,8 @@ export function screenContent(text: string): ScreenContent {
   const kind = KINDS.find(([re]) => re.test(head))?.[1] ?? KINDS.find(([re]) => re.test(text.toLowerCase()))?.[1] ?? "image";
   if (parts.length > 1) return { kind, title: parts[1] as string, items: parts.slice(2) };
   const title = text.replace(/\b(full[\s-]?screen|fs|on screen)\b/gi, "").replace(/\s+/g, " ").trim();
+  // "Maybe at this point show an article or the headline…" names the kind, not the title
+  if (title.length > TITLE_MAX) return { kind, title: KIND_TITLE[kind], items: [] };
   return { kind, title: cap(title) || "Graphics", items: [] };
 }
 

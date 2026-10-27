@@ -101,3 +101,10 @@ describe("screen segments on the podcast sample", () => {
     expect(JSON.stringify(screenAt(segs, t))).toBe(JSON.stringify(screenAt(segs, t)));
   });
 });
+
+describe("screens from a brief", () => {
+  it("uses a short title when a long note becomes a screen", () => {
+    const c = screenContent("Maybe later in the broadcast they pull up a graph or some statistics. Instead of someone just reading numbers");
+    expect(c).toEqual({ kind: "chart", title: "The numbers", items: [] });
+  });
+});

@@ -12,6 +12,15 @@ export const NO_PERSON = "none";
 /** The option Jev picks when the line asks for no shot size. */
 export const NO_SHOT = "unspecified";
 
+/**
+ * Thresholds for the brief questions. Above QUOTE_YES the line is dialogue and its text is
+ * the quoted words; above ADVICE_YES it is an off-air note; between ADVICE_NO and
+ * ADVICE_YES Jev is unsure, so the row is flagged for a human.
+ */
+export const QUOTE_YES = 0.7;
+export const ADVICE_YES = 0.7;
+export const ADVICE_NO = 0.3;
+
 export function jevState(segment: string, context: ContextRow[], studio: Studio) {
   return {
     show: "A rundown for a live TV talk show. Each line is one beat: someone speaks, acts, or the crew gets a direction.",
@@ -51,6 +60,16 @@ export function jevQuestions(studio: Studio) {
       medium: "A medium shot: \"medium\", \"mid shot\", \"MS\".",
       wide: "A wide shot of the studio or a group: \"wide\", \"WS\", \"establishing\".",
       [NO_SHOT]: "The line does not name a shot size.",
+    }),
+    // A brief mixes advice with the show itself; these two separate them (see jev.ts)
+    general_advice: noul("Is `line` general advice about how the show should look or be made, rather than something placed at this point in the show?", {
+      true: "Advice or a wish for the whole show: how transitions should feel, how big text should be, what to avoid, how the team should work.",
+      false:
+        'Something placed at this point in the running order: words someone says, a shot, a graphic or clip that comes up, or a cue, even when it is worded as a suggestion such as "maybe show the poll here".',
+    }),
+    quote_is_line: noul("Does `line` give, in quotes, words that a cast member says on air?", {
+      true: "It quotes what a person in `cast` says, such as Jamie: “Wait, click on that.” or Jamie could say “Can we pull that up?”.",
+      false: "It has no quoted words for a person in `cast` to say, or the quotes are labels, titles, or an example of what not to say.",
     }),
     unknown_speaker: noul("Does `line` name a speaker who is not in `cast`?", {
       true: "The line starts with a speaker name, such as \"PETER:\", that matches nobody in `cast`.",

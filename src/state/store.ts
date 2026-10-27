@@ -7,6 +7,7 @@ import type { CallMeta, ClassifyOne } from "../classify/types";
 import { planShow, type Plan, type ShotBlock } from "../engine";
 import { talkshow } from "../fixtures/studios";
 import { SAMPLES } from "../fixtures/samples";
+import { chooseCast, detectCast } from "../classify/cast";
 import type { Row, Studio } from "../model/types";
 import { applyEdit, type Edit } from "./edit";
 
@@ -19,6 +20,8 @@ type State = {
   provider: ProviderId;
   /** which server providers have a key; null until the first check */
   health: ServerHealth | null;
+  /** set when Parse changed the cast to fit the script, shown under the button */
+  castNote: string | null;
   /** speed and cost of the last parse, for the footer */
   stats: { calls: number; totalMs: number; lastMs: number; costUsd: number | null; model: string | null } | null;
   /** classifier output plus human edits; the engine reads this */
@@ -75,6 +78,7 @@ export const useStore = create<State>()((set, get) => ({
   script: "",
   provider: "mock",
   health: null,
+  castNote: null,
   stats: null,
   rows: [],
   plan: { rows: [], blocks: [], shots: {} },
@@ -96,7 +100,7 @@ export const useStore = create<State>()((set, get) => ({
     const { studio } = get();
     // a different cast: rows, edits and the plan belong to the old studio
     const fresh = studio.id === sample.studio.id ? {} : { rows: [], plan: plan(sample.studio, []), time: 0, playing: false, stats: null };
-    set({ script: sample.script, studio: sample.studio, sampleId: sample.id, ...fresh });
+    set({ script: sample.script, studio: sample.studio, sampleId: sample.id, castNote: null, ...fresh });
   },
   setProvider: (provider) => set({ provider }),
   checkServer: async () => {
@@ -106,7 +110,25 @@ export const useStore = create<State>()((set, get) => ({
   },
 
   parse: async () => {
-    const { script, studio, provider, rows: previous } = get();
+    const { script, provider } = get();
+    // the script's speakers decide the cast before anything is classified
+    const names = detectCast(script);
+    const choice = chooseCast(get().studio, names, SAMPLES.map((s) => s.studio));
+    if (choice.kind !== "keep") {
+      const before = get().studio;
+      set({
+        studio: choice.studio,
+        rows: [],
+        castNote:
+          choice.kind === "switch"
+            ? `${names.join(", ")} are the cast of “${choice.studio.name}”, so it is loaded.`
+            : `${choice.names.join(", ")} took the seats of ${before.people
+                .slice(0, choice.names.length)
+                .map((p) => p.name.split(" ")[0])
+                .join(", ")}.`,
+      });
+    } else set({ castNote: null });
+    const { studio, rows: previous } = get();
     const segments = segment(script);
     set({ parsing: { done: 0, total: segments.length }, error: null, playing: false });
     let stats: NonNullable<State["stats"]> = { calls: 0, totalMs: 0, lastMs: 0, costUsd: null, model: null };

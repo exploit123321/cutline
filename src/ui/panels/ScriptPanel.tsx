@@ -14,7 +14,7 @@ const PROVIDERS: { id: ProviderId; label: string; hint: string }[] = [
 const KEY_NAME = { jev: "TYPESAFE_API_KEY", llm: "ANTHROPIC_API_KEY" } as const;
 
 export function ScriptPanel() {
-  const { script, setScript, loadSample, provider, setProvider, parse, parsing, error, health, checkServer, rows } = useStore();
+  const { script, setScript, loadSample, provider, setProvider, parse, parsing, error, health, checkServer, rows, castNote } = useStore();
 
   useEffect(() => {
     void checkServer();
@@ -69,6 +69,12 @@ export function ScriptPanel() {
         {parsing ? `Classifying ${parsing.done}/${parsing.total}…` : "Parse"}
       </button>
 
+      {castNote && (
+        <p className="fade-up rounded-lg bg-accent-soft px-2.5 py-1.5 text-[12px] leading-snug text-fg-2">
+          <span className="font-semibold text-accent">Cast </span>
+          {castNote}
+        </p>
+      )}
       {error && <p className="text-[11px] text-invalid">{error}</p>}
       {rows.length > 0 && (
         <p className="flex flex-wrap items-center gap-1 text-[11px] text-fg-3">

@@ -1,5 +1,5 @@
 import type { RowType, Studio } from "../model/types";
-import { PREFIX } from "./extract";
+import { PREFIX, unquote } from "./extract";
 import { explicitShot, firstMention, norm, resolveSpeaker, slug } from "./text";
 import type { ClassifyOne, ContextRow, RawClassification } from "./types";
 
@@ -74,7 +74,7 @@ export function mockClassify(segment: string, context: ContextRow[], studio: Stu
   const prefix = PREFIX.exec(s);
   if (prefix) {
     const name = prefix[1] ?? "";
-    const body = (prefix[2] ?? "").trim();
+    const body = unquote((prefix[2] ?? "").trim());
     const tagged = tagType(name);
     if (tagged) {
       return result(tagged, firstMention(body, studio)?.id ?? null, body, { type: 0.9, speakerId: 0.9 });

@@ -11,7 +11,7 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Press **Load sample** (pick *Evening Desk*, a talk show, or *Late Line*, three hosts with screen shares), then **Parse**, then **Play**. The default `mock` classifier is rule-based and works offline.
+Press **Load sample** (pick *Evening Desk*, a talk show, or *Late Line*, three hosts with screen shares), then **Parse**, then **Play**. You can also paste a loose director's brief: Parse reads the cast from the names in it and picks or recasts the studio, and Jev separates the lines to be said from the advice around them. The default `mock` classifier is rule-based and works offline.
 
 ## Use the Jev classifier
 

@@ -86,6 +86,12 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 - **Room.** Floor, drape walls and a ceiling grid close the studio (36 × 36 × 10 m). The orbit limits keep the eye inside it, so no angle shows empty space.
 - **Second sample.** `Late Line` is the user's script turned into a rundown: three hosts (Alex, Jamie, Sam, with the optional `role` field on Person) and eight screen moments. It is not in the eval set yet, because its rows have no hand labels.
 
+## Briefs, not only rundowns (2026-10-27)
+- **The cast comes from the script.** Before anything is classified, `detectCast` reads speaker names in code: a one-word prefix (`ALEX:`, `M:`), or a name before a verb of speech and quoted words (`Jamie could say “…”`). If the studio's cast covers fewer than half of them, Parse switches to the sample studio whose cast covers at least three quarters, or else puts the names on the current seats (set, cameras and props stay). The Rundown panel says which happened.
+- **Two more Jev questions, decided in code.** `general_advice` ("is this advice for the whole show, rather than something placed at this point?") and `quote_is_line` ("does this give, in quotes, words a cast member says on air?") go in the same request as the others. Truth table: quoted words above 0.7 make the row dialogue, with the quoted words as its text. Otherwise, advice above 0.7 makes it an off-air note. Advice between 0.3 and 0.7 keeps Jev's type but caps its confidence at 0.6, so the row is flagged for a human. Below 0.3, Jev's type stands.
+- **How the wording was checked.** Both questions were probed live on the 71 segments of the author's brief before they went in: quoted lines scored 0.95–0.99, the "Before"/"After" labels 0.07; style advice 0.8–0.97, placed moments ("show the poll here") 0.03–0.2. The labelled rundowns still score 37/37. No wording was tuned to single lines.
+- **Text.** Wrapping quotes are dropped from a line (`Alex: “So…”` → `So…`). When Jev says the quotes are spoken words, the row's text is just the quoted words, so subtitles show what is said, not the note around it. A note that becomes a screen gets a short title for its kind ("Article", "The numbers") instead of the whole sentence as a headline.
+
 ## Dependencies beyond the stack list
 - `@typesafe-ai/sdk`: the official Jev client (the spec asks for it if it exists).
 - `@fontsource-variable/afacad`: the UI font, self-hosted (asked and approved 2026-10-27).
