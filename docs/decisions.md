@@ -59,6 +59,12 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 - **Shadows only in the big views.** Each view renders its own shadow map, so the overview and program cast shadows and the multiview tiles do not. Measured 66 fps in Show at 1252 px wide with all five views running.
 - **Design system.** Tokens, button styles, motion keyframes, `SegmentedControl` and `RollingNumber` are ported from the author's Peek & Grep (MIT). Broadcast colours sit on top: tally red for program, green for preview. The blue accent marks interaction and the person talking.
 
+## Realistic people (2026-10-27)
+- **Source.** The author's own Meshy AI people, rigged with a Mixamo skeleton (`D:	sak\meshy-library\curated\people`). `scripts/prepare_people.py` makes them web-sized: 2048 px JPEG textures instead of 4096 px PNG, no animation clips, and a plain lit material instead of Meshy's self-lit one (emissive copy of the texture, metalness 1). Each file went from about 17 MB to 2.8 MB. Cast: Anna `woman_green_sweater`, Mārtiņš `man_knit_sweater`, Laura `woman_camel_coat`. Other studios get the three models in turn.
+- **Seating without animation clips.** `SeatedRig` resets the skeleton to its bind pose from the inverse bind matrices (the file's node transforms can hold a frame of a run cycle). Then it turns each bone by the smallest rotation that points it at its child along a target direction in model space. This avoids Mixamo's per-bone local axes. Gaze, nods and laughs are extra rotations about the model's up and right axes, split over chest (25%), neck (30%) and head (45%). The shins are aimed once so that the ankles land 8.5 cm above the floor.
+- **Fallback.** While a model loads, or if it fails, the built figure stands in (`Suspense` and an error boundary). Standing people (eye height ≥ 1.45 m) keep the built figure, because the rig only seats.
+- **Cost.** Each view gets a `SkeletonUtils.clone`. Geometry and textures are shared, so five views hold one copy of each texture. Frustum culling is off on the people, because their bounding spheres come from the standing bind pose.
+
 ## Dependencies beyond the stack list
 - `@typesafe-ai/sdk`: the official Jev client (the spec asks for it if it exists).
 - `@anthropic-ai/sdk`: the official client for the llm comparison provider.

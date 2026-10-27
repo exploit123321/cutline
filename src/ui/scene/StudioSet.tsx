@@ -5,7 +5,7 @@ import type { Studio } from "../../model/types";
 import { camerasAt } from "../../show";
 import { useStore } from "../../state/store";
 import { BroadcastCamera } from "./models/BroadcastCamera";
-import { Human } from "./models/Human";
+import { RealPerson } from "./models/RealPerson";
 import { DETAILED, LightRig } from "./models/SetPieces";
 import { C, mat } from "./models/shared";
 import { PresetModel } from "./PresetModel";
@@ -65,7 +65,7 @@ export function People({ studio }: { studio: Studio }) {
   return (
     <>
       {studio.people.map((p, i) => (
-        <Human key={p.id} person={p} index={i} />
+        <RealPerson key={p.id} person={p} index={i} />
       ))}
     </>
   );
