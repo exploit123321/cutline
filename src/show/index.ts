@@ -140,6 +140,8 @@ export type Performance = {
   exchanges: { start: number; pair: [string, string] }[];
   /** each person's first line, for the name strap */
   firstLines: Record<string, { start: number; end: number }>;
+  /** when each name strap is on screen */
+  straps: StrapWindow[];
 };
 
 const onAir = (r: Row) => r.start !== null && r.duration !== null && r.duration > 0;
@@ -208,7 +210,7 @@ export function buildPerformance(plan: Plan, studio: Studio): Performance {
       (beats[p.id] as Beat[]).push({ start, end, talking, lookAt, target, act });
     }
   }
-  return { beats, exchanges, firstLines };
+  return { beats, exchanges, firstLines, straps: strapWindows(plan, firstLines) };
 }
 
 export type PersonState = {
@@ -257,13 +259,84 @@ export function exchangeAt(perf: Performance, t: number): [string, string] | nul
   return pair;
 }
 
-/** Name strap for a person's first line on air, for its first few seconds. */
-export const STRAP_TIME = 3.5;
-export function strapAt(perf: Performance, t: number): string | null {
-  for (const [id, line] of Object.entries(perf.firstLines)) {
-    if (t >= line.start && t < Math.min(line.end, line.start + STRAP_TIME)) return id;
+/** A name strap (lower-third) stays up at least this long… */
+export const STRAP_MIN = 3;
+/** …then leaves on the first cut or new phrase, and at the latest after this long. */
+export const STRAP_MAX = 7;
+/** How long the strap takes to wipe on, and off when it does not leave on a cut. */
+export const STRAP_WIPE = 0.45;
+
+export type StrapWindow = {
+  personId: string;
+  start: number;
+  end: number;
+  /** cut: it goes out with the cut; phrase: its wipe ends as the next subtitle cue starts */
+  out: "cut" | "phrase" | "time";
+};
+
+export type Strap = {
+  personId: string;
+  /** 0..1: wiping on */
+  enter: number;
+  /** 0..1: wiping off (1 = fully gone) */
+  exit: number;
+};
+
+/** Every time a camera change goes to air. A reframe on the same camera is not a cut. */
+export function cutTimes(plan: Plan): number[] {
+  return plan.blocks.filter((b, i) => i > 0 && plan.blocks[i - 1]?.cameraId !== b.cameraId).map((b) => b.start);
+}
+
+/** Every time the words change: each row on air starts and ends, and each subtitle cue starts. */
+export function phraseTimes(plan: Plan): number[] {
+  const times: number[] = [];
+  for (const r of plan.rows.filter(onAir)) {
+    const start = r.start as number;
+    const dur = r.duration as number;
+    times.push(start, start + dur);
+    if (r.type !== "dialogue") continue;
+    const words = subtitleChunks(r.text).map((c) => c.split(/\s+/).length);
+    const total = words.reduce((a, b) => a + b, 0);
+    let acc = 0;
+    for (const w of words.slice(0, -1)) times.push(start + ((acc += w) / total) * dur);
   }
-  return null;
+  return [...new Set(times)].sort((a, b) => a - b);
+}
+
+/**
+ * One strap per person, on their first line. It stays STRAP_MIN, then leaves with the
+ * first cut or phrase change, so it never goes out in the middle of a shot and a phrase.
+ */
+export function strapWindows(plan: Plan, firstLines: Performance["firstLines"]): StrapWindow[] {
+  const cuts = cutTimes(plan);
+  const phrases = phraseTimes(plan);
+  const lines = Object.entries(firstLines).sort((a, b) => a[1].start - b[1].start);
+  return lines.map(([personId, line], i) => {
+    const from = line.start + STRAP_MIN;
+    const latest = Math.min(line.start + STRAP_MAX, lines[i + 1]?.[1].start ?? Infinity);
+    const first = (ts: number[]) => ts.find((x) => x >= from - 1e-9 && x <= latest + 1e-9);
+    const cut = first(cuts);
+    const phrase = first(phrases);
+    // a cut and a phrase change at the same moment go out on the cut
+    if (cut !== undefined && (phrase === undefined || cut <= phrase + 1e-9)) return { personId, start: line.start, end: cut, out: "cut" };
+    if (phrase !== undefined) return { personId, start: line.start, end: phrase, out: "phrase" };
+    return { personId, start: line.start, end: latest, out: "time" };
+  });
+}
+
+/**
+ * The lower-third on screen at t, with how far it has wiped on and off. Timed from the
+ * playhead, not a CSS timer, so a scrub or a recorded frame shows the same strap.
+ */
+export function strapAt(perf: Performance, t: number): Strap | null {
+  const w = perf.straps.find((s) => t >= s.start && t < s.end);
+  if (!w) return null;
+  return {
+    personId: w.personId,
+    enter: smooth((t - w.start) / STRAP_WIPE),
+    // on a cut the strap goes out with the picture; otherwise its wipe ends on the boundary
+    exit: w.out === "cut" ? 0 : 1 - smooth((w.end - t) / STRAP_WIPE),
+  };
 }
 
 // ---------- Screens ----------

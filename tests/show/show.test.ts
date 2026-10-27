@@ -16,6 +16,11 @@ import {
   peopleAt,
   SETTLE_TIME,
   strapAt,
+  strapWindows,
+  STRAP_MAX,
+  STRAP_MIN,
+  cutTimes,
+  phraseTimes,
   SUB_LINE,
   SUB_LINES,
   subtitleAt,
@@ -154,7 +159,11 @@ describe("peopleAt", () => {
     if (!m || m.start === null) throw new Error("no M row");
     expect(exchangeAt(perf, m.start + 0.5)).toEqual(["anna", "martins"]);
     expect(exchangeAt(perf, 0)).toBeNull();
-    expect(strapAt(perf, m.start + 0.5)).toBe("martins");
+    expect(strapAt(perf, m.start + 1)).toEqual({ personId: "martins", enter: 1, exit: 0 });
+    // wiping on at the start of the line
+    const opening = strapAt(perf, m.start + 0.1);
+    expect(opening?.enter).toBeGreaterThan(0);
+    expect(opening?.enter).toBeLessThan(1);
   });
 });
 
@@ -209,5 +218,47 @@ describe("subtitles", () => {
     expect(first?.text).toBe("Labvakar and welcome back to Evening Desk.");
     expect(last?.text).toBe("Tonight we have two guests");
     expect(first?.key).not.toBe(last?.key);
+  });
+});
+
+describe("name strap timing", () => {
+  it("stays at least STRAP_MIN and leaves on a cut or a phrase change", async () => {
+    const plan = await samplePlan();
+    const perf = buildPerformance(plan, talkshow);
+    const cuts = cutTimes(plan);
+    const phrases = phraseTimes(plan);
+    expect(perf.straps.map((s) => s.personId)).toEqual(["anna", "martins", "laura"]);
+    for (const s of perf.straps) {
+      expect(s.end - s.start).toBeGreaterThanOrEqual(STRAP_MIN - 1e-9);
+      expect(s.end - s.start).toBeLessThanOrEqual(STRAP_MAX + 1e-9);
+      if (s.out === "cut") expect(cuts).toContain(s.end);
+      if (s.out === "phrase") expect(phrases).toContain(s.end);
+    }
+  });
+
+  it("goes out with the cut on Anna's opening, and wipes off into the graphic after Mārtiņš", async () => {
+    const plan = await samplePlan();
+    const [anna, martins] = buildPerformance(plan, talkshow).straps;
+    // Anna 2.0–6.8 s: the cue change at 4.8 s is too early, the cut to CAM 2 at 6.8 s takes it out
+    expect(anna).toMatchObject({ start: 2, end: 6.8, out: "cut" });
+    // Mārtiņš 12.8 s: 16.8 s is a reframe on CAM 2, not a cut, so it leaves on the phrase change
+    expect(martins).toMatchObject({ start: 12.8, end: 16.8, out: "phrase" });
+  });
+
+  it("is fully on until a cut, and wipes off before a phrase change", async () => {
+    const plan = await samplePlan();
+    const perf = buildPerformance(plan, talkshow);
+    const [anna, martins] = perf.straps;
+    if (!anna || !martins) throw new Error("straps missing");
+    expect(strapAt(perf, anna.end - 0.01)?.exit).toBe(0);
+    expect(strapAt(perf, anna.end)).toBeNull();
+    expect(strapAt(perf, martins.end - 0.01)?.exit).toBeGreaterThan(0.95);
+  });
+
+  it("never leaves before STRAP_MIN even when a phrase ends sooner", () => {
+    const plan = planShow({ studio: tiny, rows: [row("dialogue", "a", words(3)), row("dialogue", "a", words(20))] });
+    const [s] = strapWindows(plan, buildPerformance(plan, tiny).firstLines);
+    expect(s?.start).toBe(0);
+    expect(s?.end).toBeGreaterThanOrEqual(STRAP_MIN);
   });
 });

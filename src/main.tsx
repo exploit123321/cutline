@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource-variable/afacad";
+import "@fontsource-variable/big-shoulders-display";
 import "./index.css";
 import { App } from "./ui/App";
 

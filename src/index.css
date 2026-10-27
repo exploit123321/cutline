@@ -53,6 +53,8 @@
   --font-sans: "Afacad Variable", "Segoe UI", system-ui, sans-serif;
   --font-display: "Afacad Variable", "Segoe UI", system-ui, sans-serif;
   --font-mono: "Afacad Variable", "Segoe UI", system-ui, sans-serif;
+  /* on-air graphics only (the lower-third): a condensed news face */
+  --font-strap: "Big Shoulders Display Variable", "Afacad Variable", sans-serif;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);

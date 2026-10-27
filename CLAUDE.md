@@ -218,7 +218,7 @@ Single page, three panels, usable at 1280×800 and above (no mobile requirement)
 
 1. **Script**: textarea for the pasted rundown, provider picker (`mock` / `llm`), a "Parse" button, a "Load sample" button.
 2. **Sheet**: editable grid of rows. Columns: #, type, speaker, text, shot, camera, start, duration, reason. Cells with confidence below the threshold are highlighted yellow; validation failures red. Editing a cell sets `locked = true` and re-runs the engine. A filter for "needs review only".
-3. **Studio + Monitor**: left, a 3D overview with people as simple capsules with name labels, cameras as small bodies with view frustum lines, the active camera highlighted. Right, the program monitor: the scene rendered from the active camera with its FOV, 16:9, with a burned-in lower label like `CAM 2 · MEDIUM · Anna`.
+3. **Studio + Monitor**: left, a 3D overview with people as simple capsules with name labels, cameras as small bodies with view frustum lines, the active camera highlighted. Right, the program monitor: the scene rendered from the active camera with its FOV, 16:9, with a label strip under the picture like `CAM 2 · MEDIUM · Anna` (the picture itself carries only what goes to air: graphics, the name strap, subtitles).
 4. **Timeline** under the preview: blocks per shot, coloured by camera, a playhead, play/pause, and clicking a block jumps there. The sheet highlights the active row.
 
 Studio editing in v1 is through a JSON file in `src/fixtures/studios/`. Drag-to-move people and cameras is stage 5.

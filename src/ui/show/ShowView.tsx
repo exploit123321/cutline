@@ -6,6 +6,7 @@ import { MonitorView } from "../MonitorView";
 import { RollingNumber } from "../motion/RollingNumber";
 import { Timeline } from "../panels/Timeline";
 import { performanceOf } from "../scene/showState";
+import { speakerColour } from "../speakers";
 import { StudioView } from "../StudioView";
 
 /**
@@ -28,7 +29,10 @@ export function ShowView() {
           <Legend />
         </section>
         <section className="flex min-h-0 flex-col gap-3">
-          <MonitorView variant="show" />
+          {/* the program takes the largest 16:9 that fits once the multiview and Now/Next have their room */}
+          <div className="min-h-0 flex-1 [container-type:size]">
+            <MonitorView variant="show" fit />
+          </div>
           <Multiview />
           <NowNext />
         </section>
@@ -121,17 +125,26 @@ const TYPE_TONE: Record<string, string> = {
   note: "text-fg-3",
 };
 
-function RowLine({ row, big, speaker }: { row: Row; big?: boolean; speaker?: string }) {
+/** One rundown row on one line: a NOW/NEXT tag, the number, the type, then speaker and text. */
+function RowLine({ tag, row, big, speaker, colour }: { tag: string; row: Row; big?: boolean; speaker?: string; colour?: string }) {
   return (
-    <div className="flex min-w-0 items-baseline gap-2">
-      <span className="num w-6 shrink-0 text-right text-[11px] text-fg-3">{row.index + 1}</span>
-      <span className={`w-14 shrink-0 text-[10.5px] font-semibold uppercase tracking-[0.06em] ${TYPE_TONE[row.type ?? ""] ?? "text-fg-3"}`}>{row.type ?? "—"}</span>
-      {speaker && <span className="shrink-0 font-semibold text-fg">{speaker}</span>}
-      <span className={`truncate ${big ? "text-[14px] text-fg" : "text-[12px] text-fg-2"}`}>{row.text}</span>
+    <div className="flex min-w-0 items-baseline gap-2.5">
+      <span className="label-caps w-9 shrink-0">{tag}</span>
+      <span className="num w-5 shrink-0 text-right text-[12.5px] text-fg-3">{row.index + 1}</span>
+      <span className={`w-[4.5rem] shrink-0 text-[11.5px] font-semibold uppercase tracking-[0.06em] ${TYPE_TONE[row.type ?? ""] ?? "text-fg-3"}`}>{row.type ?? "—"}</span>
+      <span className={`min-w-0 truncate ${big ? "text-[17px] text-fg" : "text-[14px] text-fg-2"}`}>
+        {speaker && (
+          <span className="font-semibold" style={{ color: colour }}>
+            {speaker}{" "}
+          </span>
+        )}
+        {row.text}
+      </span>
     </div>
   );
 }
 
+/** Only as tall as its content: status, the action on air, the next action. The program takes the rest. */
 function NowNext() {
   const studio = useStore((s) => s.studio);
   const plan = useStore((s) => s.plan);
@@ -149,20 +162,19 @@ function NowNext() {
   const nextCam = studio.cameras.find((c) => c.id === cams.pvw);
 
   return (
-    <div className="panel flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[12px] p-3">
-      <div className="flex items-center gap-3">
-        <span className="label-caps">Now</span>
-        <span className="chip !h-6">
+    <div className="panel flex shrink-0 flex-col gap-2 rounded-[12px] px-4 py-3">
+      <div className="flex items-center gap-2.5 text-[13px]">
+        <span className="chip !h-7 !text-[13px]">
           shot <RollingNumber value={shotNo} className="font-semibold text-fg" /> / {plan.blocks.length}
         </span>
         {talking && (
-          <span className="chip !h-6">
+          <span className="chip !h-7 !text-[13px]">
             <span className="live-dot h-1.5 w-1.5 rounded-full bg-accent" />
             {name(talking.id)} talking
           </span>
         )}
         {cutIn !== null && nextCam && (
-          <span className="ml-auto flex items-center gap-1.5 text-[11.5px] text-fg-2">
+          <span className="ml-auto flex items-center gap-1.5 text-[13.5px] text-fg-2">
             cut to <span className="font-semibold text-pvw">{nextCam.label}</span> in
             <span className="num font-semibold text-fg">{cutIn.toFixed(1)}</span>s
           </span>
@@ -170,14 +182,12 @@ function NowNext() {
       </div>
       {row && (
         <div key={row.id} className="fade-up">
-          <RowLine row={row} big speaker={name(row.speakerId)} />
-          {row.reason && <div className="mt-1 truncate pl-8 text-[11.5px] text-fg-3">{row.reason}</div>}
+          <RowLine tag="Now" row={row} big speaker={name(row.speakerId)} colour={speakerColour(studio, row.speakerId)} />
         </div>
       )}
       {next && (
-        <div className="mt-auto border-t border-line pt-2">
-          <div className="label-caps mb-1">Next</div>
-          <RowLine row={next} speaker={name(next.speakerId)} />
+        <div className="border-t border-line pt-2">
+          <RowLine tag="Next" row={next} speaker={name(next.speakerId)} colour={speakerColour(studio, next.speakerId)} />
         </div>
       )}
     </div>

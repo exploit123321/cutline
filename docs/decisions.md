@@ -69,9 +69,17 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 - **Subtitles** come from `subtitleAt(plan, t)` in `src/show/`: the dialogue line on air, split into cues of at most two lines of 42 characters (the usual broadcast limit). A cue ends early at a sentence end once it holds a third of the space, so a short "Yes." does not flash up alone. Each cue gets screen time in proportion to its words. The text goes into sentence case, because rundowns are often typed in lower case. On screen the format is `Name: text`, with the first name in the speaker's colour (`src/ui/speakers.ts`: yellow, cyan, pink, green…, kept away from tally red and preview green). Each wrapped line gets its own box.
 - **Afacad everywhere**, code-like text included. Its digits are equal width by default, so timecodes do not jitter. The font is bundled from `@fontsource-variable/afacad` (OFL-1.1), so the app stays offline. Canvas text (3D labels, the video wall) is drawn into textures, so it is drawn in the fallback font until Afacad has loaded and then drawn again (`useCanvasFont`). The base size is 14 px, because Afacad sets smaller than Segoe UI.
 
+## Program picture, lower-third (2026-10-27)
+- **Only on-air content in the picture.** The camera, shot and reason moved from a burned-in label to a strip under the picture. The picture keeps the PGM tally, graphics, the lower-third and subtitles.
+- **Lower-third** (name strap) on each person's first line, in two tiers: the show block and the name, then a shorter role bar from the left edge, both with angled ends and 85% opaque. It is set in Big Shoulders Display, a condensed news face. It sits at the left above the subtitle area, so subtitles stay low and never move.
+- **The strap leaves on the edit.** It stays at least `STRAP_MIN` (3 s). Then it leaves on the first cut (a camera change; a reframe on the same camera does not count) or the first phrase change (a row starts or ends, or a subtitle cue changes), at the latest after `STRAP_MAX` (7 s). On a cut it goes out with the picture. On a phrase change its wipe ends as the next cue starts. All of this is timed from the playhead (`strapWindows`, `strapAt`), so scrubbing and recorded frames match.
+- **Subtitles have no box.** A dark outline (`-webkit-text-stroke` painted under the fill) and a soft shadow keep them readable.
+- **Show layout.** Now/Next is only as tall as its content (status, NOW, NEXT), and the multiview keeps its 16:9 tiles. The program takes the largest 16:9 that fits the rest of the column (a size container with `min(100cqw, (100cqh − strip) · 16/9)`).
+
 ## Dependencies beyond the stack list
 - `@typesafe-ai/sdk`: the official Jev client (the spec asks for it if it exists).
 - `@fontsource-variable/afacad`: the UI font, self-hosted (asked and approved 2026-10-27).
+- `@fontsource-variable/big-shoulders-display`: the lower-third font, self-hosted (requested by the author 2026-10-27).
 - `@anthropic-ai/sdk`: the official client for the llm comparison provider.
 - `@hono/node-server`: runs the hono app on Node.
 - `tsx`: runs the server and `npm run eval` from TypeScript.
