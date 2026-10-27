@@ -7,7 +7,7 @@
       "name": "Anna Bērziņa",
       "aliases": ["Anna", "host", "A."],
       "position": { "x": -1.5, "y": 0, "z": 0 },
-      "facingYaw": -120,
+      "facingYaw": -140,
       "eyeHeight": 1.2
     },
     {
@@ -15,7 +15,7 @@
       "name": "Mārtiņš Kalniņš",
       "aliases": ["Mārtiņš", "Martins", "M"],
       "position": { "x": 0.5, "y": 0, "z": -0.4 },
-      "facingYaw": 115,
+      "facingYaw": 132,
       "eyeHeight": 1.2
     },
     {
@@ -23,7 +23,7 @@
       "name": "Laura Ozola",
       "aliases": ["Laura", "L"],
       "position": { "x": 1.6, "y": 0, "z": 0 },
-      "facingYaw": 115,
+      "facingYaw": 132,
       "eyeHeight": 1.2
     }
   ],
@@ -58,9 +58,9 @@
   ],
   "props": [
     { "preset": "rug", "position": { "x": 0, "y": 0, "z": 0 }, "yaw": 0 },
-    { "preset": "armchair", "position": { "x": -1.5, "y": 0, "z": 0 }, "yaw": -120 },
-    { "preset": "armchair", "position": { "x": 0.5, "y": 0, "z": -0.4 }, "yaw": 115 },
-    { "preset": "armchair", "position": { "x": 1.6, "y": 0, "z": 0 }, "yaw": 115 },
+    { "preset": "armchair", "position": { "x": -1.5, "y": 0, "z": 0 }, "yaw": -140 },
+    { "preset": "armchair", "position": { "x": 0.5, "y": 0, "z": -0.4 }, "yaw": 132 },
+    { "preset": "armchair", "position": { "x": 1.6, "y": 0, "z": 0 }, "yaw": 132 },
     { "preset": "coffeeTable", "position": { "x": -0.2, "y": 0, "z": 0.7 }, "yaw": 0 },
     { "preset": "tvScreen", "position": { "x": 0, "y": 0, "z": -2.3 }, "yaw": 180 },
     { "preset": "backdrop", "position": { "x": 0, "y": 0, "z": -2.8 }, "yaw": 180 }
