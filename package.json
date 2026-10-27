@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b --noEmit && vite build",
     "preview": "vite preview",
     "server": "tsx server/index.ts",
     "typecheck": "tsc -b --noEmit",
@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:live": "vitest run tests/live",
+    "dev:all": "npm run server & vite",
     "eval": "tsx scripts/eval.ts"
   },
   "dependencies": {

@@ -1,9 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { ClassifyRequest, LlmOutput } from "./prompt";
 import { LlmOutputSchema, systemPrompt, userPrompt } from "./prompt";
 
 export const DEFAULT_MODEL = "claude-opus-5-5";
+
+/** Models that accept the server-side refusal fallback; other overrides run without it. */
+const FALLBACK_MODELS = new Set(["claude-opus-5-5", "claude-opus-5", "claude-fable-5-1", "claude-sonnet-5-5"]);
 
 export function modelName(): string {
   return process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
@@ -20,13 +23,20 @@ export class ClassifyError extends Error {}
  * schema; LlmOutputSchema is checked again here so nothing unvalidated leaves the server.
  */
 export async function classifySegment(req: ClassifyRequest, client: Anthropic = new Anthropic()): Promise<LlmOutput> {
-  const response = await client.messages.parse({
-    model: modelName(),
-    max_tokens: 1024,
+  const model = modelName();
+  const fallback = FALLBACK_MODELS.has(model)
+    ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }
+    : {};
+  const response = await client.beta.messages.parse({
+    model,
+    // thinking is always on for current Opus models; leave room for it at low effort
+    max_tokens: 4096,
+    // if a safety classifier declines, the API retries on a suitable fallback model
+    ...fallback,
     system: systemPrompt(req.studio),
     messages: [{ role: "user", content: userPrompt(req.segment, req.context) }],
     // short labelling task: low effort keeps latency and cost down
-    output_config: { effort: "low", format: zodOutputFormat(LlmOutputSchema) },
+    output_config: { effort: "low", format: betaZodOutputFormat(LlmOutputSchema) },
   });
   if (response.stop_reason === "refusal") throw new ClassifyError("model declined to classify this segment");
   if (response.stop_reason === "max_tokens") throw new ClassifyError("model output was cut off");

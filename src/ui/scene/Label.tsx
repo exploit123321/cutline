@@ -13,7 +13,7 @@ type Props = {
  * A billboard text label drawn into a canvas texture. Avoids font downloads
  * (drei <Text> fetches a font) so the app keeps working offline.
  */
-export function Label({ text, position, color = "#e2e7ec", background = "rgba(10,12,16,0.82)", height = 0.18 }: Props) {
+export function Label({ text, position, color = "#e2e7ec", background = "rgba(10,12,16,0.82)", height = 0.032 }: Props) {
   const { texture, aspect } = useMemo(() => {
     const scale = 4;
     const font = `600 ${13 * scale}px Inter, system-ui, sans-serif`;
@@ -43,8 +43,9 @@ export function Label({ text, position, color = "#e2e7ec", background = "rgba(10
   useEffect(() => () => texture.dispose(), [texture]);
 
   return (
+    // sizeAttenuation off: labels keep a readable screen size at any zoom; height is in screen units
     <sprite position={position} scale={[height * aspect, height, 1]} renderOrder={10}>
-      <spriteMaterial map={texture} depthTest={false} transparent />
+      <spriteMaterial map={texture} depthTest={false} transparent sizeAttenuation={false} />
     </sprite>
   );
 }

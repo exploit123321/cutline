@@ -21,15 +21,16 @@ export const ClassifyRequestSchema = z.object({
 export type ClassifyRequest = z.infer<typeof ClassifyRequestSchema>;
 
 /**
- * Shape the model must answer with. Enums are enforced by structured output; the
- * speaker is a free string on purpose so an unknown speaker reaches validation and
- * is flagged for review instead of being forced onto a known id.
+ * Shape the model must answer with. This checks structure only: enum values and the
+ * speaker id are plain strings here because the browser-side validate() checks each
+ * field against the studio, so one bad field is nulled and flagged instead of the
+ * whole row being thrown away. (The SDK turns zod enums into hints, not constraints.)
  */
 export const LlmOutputSchema = z.object({
-  type: z.enum(ROW_TYPES),
+  type: z.string(),
   speakerId: z.string().nullable(),
   text: z.string(),
-  shot: z.enum(SHOTS).nullable(),
+  shot: z.string().nullable(),
   confidence: z.object({ type: z.number(), speakerId: z.number(), shot: z.number() }),
 });
 export type LlmOutput = z.infer<typeof LlmOutputSchema>;
@@ -49,7 +50,8 @@ Classify ONE segment. Row types:
 - cue: a production cue (open, music, bumper, break, SFX, titles).
 - note: anything for the crew that is not on air.
 
-Shot sizes: close, medium, wide. Set "shot" only when the text asks for one; otherwise null.
+"type" must be exactly one of: ${ROW_TYPES.join(", ")}.
+"shot" must be exactly one of: ${SHOTS.join(", ")}, or null. Set it only when the text asks for a shot size; otherwise null.
 
 People in this studio:
 ${people}

@@ -4,6 +4,7 @@ import { createApp } from "../../server/app";
 import { ClassifyError, classifySegment } from "../../server/anthropic";
 import { systemPrompt, userPrompt, type LlmOutput } from "../../server/prompt";
 import { talkshow } from "../../src/fixtures/studios";
+import { validate } from "../../src/classify/validate";
 
 const good: LlmOutput = {
   type: "dialogue",
@@ -49,7 +50,7 @@ describe("classifier server", () => {
 });
 
 describe("classifySegment with a stubbed client", () => {
-  const stub = (response: unknown) => ({ messages: { parse: async () => response } }) as unknown as Anthropic;
+  const stub = (response: unknown) => ({ beta: { messages: { parse: async () => response } } }) as unknown as Anthropic;
 
   it("accepts schema-valid output", async () => {
     expect(await classifySegment(body, stub({ stop_reason: "end_turn", parsed_output: good }))).toEqual(good);
@@ -57,8 +58,14 @@ describe("classifySegment with a stubbed client", () => {
 
   it("rejects output that does not match the schema", async () => {
     await expect(
-      classifySegment(body, stub({ stop_reason: "end_turn", parsed_output: { ...good, type: "monologue" } })),
+      classifySegment(body, stub({ stop_reason: "end_turn", parsed_output: { ...good, confidence: undefined } })),
     ).rejects.toThrow(ClassifyError);
+  });
+
+  it("passes a bad enum through so validation can null just that field", async () => {
+    const out = await classifySegment(body, stub({ stop_reason: "end_turn", parsed_output: { ...good, type: "monologue" } }));
+    const v = validate(out, body.segment, talkshow);
+    expect(v).toMatchObject({ type: null, speakerId: "anna", invalid: ["type"], needsReview: true });
   });
 
   it("rejects refusals and truncated output", async () => {

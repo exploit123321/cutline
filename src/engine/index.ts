@@ -31,7 +31,8 @@ export type ShotBlock = {
   rowIds: string[];
 };
 
-export type Plan = { rows: Row[]; blocks: ShotBlock[] };
+/** `shots` holds the shot size the engine used for each row id, including rule-2 defaults. */
+export type Plan = { rows: Row[]; blocks: ShotBlock[]; shots: Record<string, Shot> };
 
 type Decision = { framing: Framing; shot: Shot; subjects: Person[] };
 
@@ -173,7 +174,8 @@ export function planShow(show: Show): Plan {
     clock += duration;
   }
 
-  return { rows: out, blocks: toBlocks(out, decisions) };
+  const shots = Object.fromEntries(out.map((r, i) => [r.id, (decisions[i] as Decision).shot]));
+  return { rows: out, blocks: toBlocks(out, decisions), shots };
 }
 
 export function runEngine(show: Show): Row[] {

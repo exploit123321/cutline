@@ -10,6 +10,7 @@ export default defineConfig({
   },
   test: {
     include: ["tests/**/*.test.ts"],
-    exclude: ["tests/live/**", "node_modules/**"],
+    // loads .env so the live tests run when ANTHROPIC_API_KEY is set, and skip otherwise
+    setupFiles: ["tests/setup.ts"],
   },
 });

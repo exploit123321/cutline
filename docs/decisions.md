@@ -23,3 +23,25 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 ## Rendering
 - One `<Canvas>` with drei `<View>`s. Each view mounts the same `<StudioSet>` component from the same store, so both panels render identical data with one renderer.
 - Labels are canvas-texture sprites, not drei `<Text>`, because `<Text>` downloads a font and the app must work offline.
+
+## Cut engine readings of the spec
+- **Shot defaults (rule 2):** dialogue → medium on the speaker; action, visual, cue, note and any speakerless row → wide on everyone. A `cut` with a speaker but no size → medium (the spec does not say; this matches "cut to Anna").
+- **Notes are off air:** duration 0, they hold the previous camera. Charging 2 s of show time for a crew note would shift every later cue.
+- **The exchange's side (rule 4):** when two people form a new speaker pair, the side is taken from the camera of the first speaker's most recent line (the shot the exchange opened on). If there is none yet, the first camera used inside the exchange sets it. Cameras exactly on the line are allowed.
+- **Crossing the line:** only a wide `cut`/`cue` whose text says "cross the line", "reverse" or "other side".
+- **Locked rows (rule 1):** a user-chosen camera or duration is kept. Editing a classification field (type, speaker, shot, text) locks the row against the *classifier* but lets the engine re-pick its camera, because the old camera was chosen for the old classification.
+- **sameAsPrevious** looks at the previous on-air row, so a note in between does not reset it.
+- **Frontality for groups** is the mean over the people in shot.
+
+## Classifier
+- Locked rows are matched to new segments by exact raw text, so they survive edits elsewhere in the script and moves within it.
+- The LLM sees one segment plus the previous 5 rows per call, as the spec asks. That is many small calls. Fixtures run in parallel in `npm run eval`.
+- Unknown speakers: both providers return the unknown name as `speakerId` so validation flags it red, instead of quietly returning `null`.
+- Server: `@anthropic-ai/sdk` (the official SDK) with structured output, `effort: "low"` for a short labelling task, and the server-side refusal fallback on models that support it. A refusal or truncated reply becomes a fully flagged row.
+
+## Dependencies beyond the stack list
+- `@anthropic-ai/sdk`: the official client for the classifier server.
+- `@hono/node-server`: runs the hono app on Node.
+- `tsx`: runs the server and `npm run eval` from TypeScript.
+- Dev tooling: `eslint`, `typescript-eslint`, `eslint-plugin-react-hooks`, `globals`, `@vitejs/plugin-react`, `@tailwindcss/vite`, `@types/*`.
+- No dotenv: Node 22's `process.loadEnvFile` reads `.env`.

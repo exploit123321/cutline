@@ -23,9 +23,10 @@ export async function evaluate(fixtures: Fixture[], studio: Studio, classifyOne:
   const correct: Record<Field, number> = { type: 0, speakerId: 0, shot: 0 };
   const mismatches: Mismatch[] = [];
   let total = 0;
-  for (const fx of fixtures) {
-    const segments = segment(fx.text);
-    const rows = await classifyAll(segments, studio, classifyOne);
+  // fixtures are independent, so they run in parallel; rows within one stay sequential (context)
+  const results = await Promise.all(fixtures.map((fx) => classifyAll(segment(fx.text), studio, classifyOne)));
+  for (const [k, fx] of fixtures.entries()) {
+    const rows = results[k] ?? [];
     const n = Math.max(rows.length, fx.expected.length);
     for (let i = 0; i < n; i++) {
       const exp = fx.expected[i];
