@@ -15,7 +15,7 @@ Press **Load sample** (pick *Evening Desk*, a talk show, or *Late Line*, three h
 
 ## Use the Jev classifier
 
-The main classifier is **Jev** by TypeSafe AI, a decision model. Jev does not write text. For each segment it answers four typed questions in one request: the row type, the speaker (a cast id or none), the shot size, and "does this line name a speaker who is not in the cast?". Each answer has a calibrated confidence, and that confidence goes straight into the sheet. Below 0.7, the cell is yellow.
+The main classifier is **Jev** by TypeSafe AI, a decision model. Jev does not write text. For each segment it answers seven typed questions in one request: the row type, who says the words, who the line shows, the shot size, whether the line names a speaker who is not in the cast, whether it is advice for the whole show, and whether it quotes words a cast member says. Code combines the answers into the row. Each answer has a calibrated confidence, and that confidence goes into the sheet. Below 0.7, the cell is yellow.
 
 ```bash
 cp .env.example .env         # then put your key in TYPESAFE_API_KEY
@@ -35,17 +35,17 @@ The **LLM** provider (Claude, `ANTHROPIC_API_KEY`) is for comparison only, so `n
 | `npm run dev:all` | Both |
 | `npm test` | All offline tests. No network, no keys |
 | `npm run test:live` | Live tests against Jev and Claude. Each runs only when its key is set |
-| `npm run eval` | Classifier accuracy per field on the hand-labelled rundowns: average latency, total cost, every mismatch, and how many wrong answers review caught versus how many slipped through. `-- --provider jev\|llm\|mock`, or `-- --all`. Each run is saved to `docs/eval/` |
+| `npm run eval` | Classifier accuracy per field and per fixture on the hand-labelled rundowns: average latency, total cost, every mismatch, how many wrong answers review caught versus how many slipped through, and a calibration table (answers grouped by score, with how many are right). `-- --provider jev\|llm\|mock`, or `-- --all`. Each run is saved to `docs/eval/` |
 | `npm run typecheck` / `npm run lint` | strict TypeScript / ESLint |
 
-Results from `npm run eval -- --all` on 37 rows (`docs/eval/`):
+Results from `npm run eval -- --all` on 162 rows: three scripted rundowns, the *Late Line* sample, and a director's brief written as prose (`docs/eval/`):
 
-| provider | type | speaker | shot | avg ms | cost | caught | slipped |
-|---|---|---|---|---|---|---|---|
-| mock | 100.0% | 97.3% | 100.0% | 0 | n/a | 1 | 0 |
-| jev (jev-1.14.0) | 100.0% | 100.0% | 100.0% | 182 | $0.001642 | 0 | 0 |
+| provider | type | speaker | shot | avg ms | cost | caught | slipped | flagged but right |
+|---|---|---|---|---|---|---|---|---|
+| mock | 84.0% | 95.7% | 97.5% | 0 | n/a | 20 | 17 | 26 |
+| jev (jev-1.14.0) | 91.4% | 98.1% | 98.8% | 181 | $0.010009 | 13 | 6 | 20 |
 
-The one mock miss is on purpose: `she continues:` after a line from Mārtiņš. Rules guess the previous speaker, so the row is flagged yellow. Jev reads the previous rows and gets the speaker right.
+On the 91 scripted rows, Jev gets every answer right. Mock misses two of them: `she continues:` after a line from Mārtiņš (rules guess the previous speaker, so the row is flagged yellow), and an opening shot that rules read as a cue. All other misses are in the brief, where both providers must tell advice from moments in the show. There, Jev gets the type right on 80% of rows and mock on 65%.
 
 ## How it works
 

@@ -63,13 +63,7 @@ export async function jevClassifySegment(req: ClassifyRequest, systemOne: System
     return a.success ? a.data : null;
   };
   const type = pick("type", "type");
-  const speaker = pick("speaker", "speakerId");
   const shot = pick("shot", "shot");
-  const unknown = NoulAnswer.safeParse(res.answers.unknown_speaker);
-  // a cast list that does not cover the speaker is a red flag, not a "nobody"
-  if (unknown.success && unknown.data.noul > UNKNOWN_SPEAKER_THRESHOLD && !failed.includes("speakerId")) {
-    failed.push("speakerId");
-  }
 
   // The truth table for briefs: Jev judges, code decides.
   //   quoted words for the cast  > QUOTE_YES       → dialogue, the text is the quoted words
@@ -91,6 +85,15 @@ export async function jevClassifySegment(req: ClassifyRequest, systemOne: System
     typeConfidence = advice.data.noul;
   } else if (advice.success && advice.data.noul >= ADVICE_NO) {
     typeConfidence = Math.min(typeConfidence, 0.6);
+  }
+
+  // Dialogue takes who says the words; every other row takes who it shows or describes.
+  // Only the answer that is used can fail the field.
+  const speaker = pick(rowType === "dialogue" ? "speaks" : "subject", "speakerId");
+  const unknown = NoulAnswer.safeParse(res.answers.unknown_speaker);
+  // a cast list that does not cover the speaker is a red flag, not a "nobody"
+  if (unknown.success && unknown.data.noul > UNKNOWN_SPEAKER_THRESHOLD && !failed.includes("speakerId")) {
+    failed.push("speakerId");
   }
 
   const inputTokens = res.usage?.input_tokens ?? null;

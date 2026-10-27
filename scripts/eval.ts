@@ -2,7 +2,6 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { evaluate, formatReport, formatTable, type EvalReport } from "../src/classify/eval";
 import { mockClassifyOne } from "../src/classify/mock";
 import type { ClassifyOne, ProviderId } from "../src/classify/types";
-import { talkshow } from "../src/fixtures/studios";
 import { classifySegment, hasApiKey } from "../server/anthropic";
 import { loadEnv } from "../server/env";
 import { hasJevKey, jevClassifySegment } from "../server/jev";
@@ -43,7 +42,7 @@ if (all) {
 const fixtures = loadRundownFixtures();
 const reports: [string, EvalReport][] = [];
 for (const name of names) {
-  const report = await evaluate(fixtures, talkshow, PROVIDERS[name].one);
+  const report = await evaluate(fixtures, PROVIDERS[name].one);
   console.log(formatReport(report, name), "\n");
   reports.push([name, report]);
 }

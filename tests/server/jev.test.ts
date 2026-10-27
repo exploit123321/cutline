@@ -13,7 +13,8 @@ const answers = (over: Record<string, unknown> = {}) => ({
   model: "jev-1.14.0",
   answers: {
     type: choice("dialogue"),
-    speaker: choice("martins", 0.9),
+    speaks: choice("martins", 0.9),
+    subject: choice(NO_PERSON, 0.8),
     shot: choice(NO_SHOT, 0.99),
     unknown_speaker: { type: "noul", noul: 0.03 },
     ...over,
@@ -32,19 +33,20 @@ function stub(body: unknown) {
 }
 
 describe("jev questions and state", () => {
-  it("asks the three spec questions plus unknown_speaker in one request", () => {
+  it("asks the spec questions, with the speaker as two questions, in one request", () => {
     const q = jevQuestions(talkshow);
-    expect(Object.keys(q)).toEqual(["type", "speaker", "shot", "general_advice", "quote_is_line", "unknown_speaker"]);
+    expect(Object.keys(q)).toEqual(["type", "speaks", "subject", "shot", "general_advice", "quote_is_line", "unknown_speaker"]);
     expect(Object.keys(q.type.criteria)).toEqual(["dialogue", "action", "visual", "cut", "cue", "note"]);
-    expect(Object.keys(q.speaker.criteria)).toEqual(["anna", "martins", "laura", NO_PERSON]);
+    for (const k of ["speaks", "subject"] as const) expect(Object.keys(q[k].criteria)).toEqual(["anna", "martins", "laura", NO_PERSON]);
     expect(Object.keys(q.shot.criteria)).toEqual(["close", "medium", "wide", NO_SHOT]);
     expect(q.unknown_speaker.type).toBe("noul");
   });
 
-  it("lists each person's aliases in the speaker criteria", () => {
-    const criteria: Record<string, unknown> = jevQuestions(talkshow).speaker.criteria;
-    const martins = String(criteria.martins);
-    for (const alias of ["Mārtiņš", "M"]) expect(martins).toContain(alias);
+  it("lists each person's aliases in both speaker questions", () => {
+    const q = jevQuestions(talkshow);
+    for (const criteria of [q.speaks.criteria, q.subject.criteria] as Record<string, unknown>[]) {
+      for (const alias of ["Mārtiņš", "M"]) expect(String(criteria.martins)).toContain(alias);
+    }
   });
 
   it("puts the cast, the previous rows (oldest first) and the line in the state", () => {
@@ -78,30 +80,44 @@ describe("jevClassifySegment with a stubbed API", () => {
   });
 
   it("maps Jev's confidence straight into the row, so a low one goes yellow", async () => {
-    const { call } = stub(answers({ speaker: choice("martins", 0.4) }));
+    const { call } = stub(answers({ speaks: choice("martins", 0.4) }));
     const v = validate(await jevClassifySegment(req, call), req.segment, talkshow);
     expect(v.confidence.speakerId).toBe(0.4);
     expect(v).toMatchObject({ speakerId: "martins", invalid: [], needsReview: true });
   });
 
   it("turns 'none' into a null speaker", async () => {
-    const { call } = stub(answers({ speaker: choice(NO_PERSON) }));
+    const { call } = stub(answers({ speaks: choice(NO_PERSON) }));
     expect((await jevClassifySegment(req, call)).speakerId).toBeNull();
   });
 
   it("flags the speaker red when the line names someone outside the cast", async () => {
-    const { call } = stub(answers({ speaker: choice("anna", 0.5), unknown_speaker: { type: "noul", noul: 0.92 } }));
+    const { call } = stub(answers({ speaks: choice("anna", 0.5), unknown_speaker: { type: "noul", noul: 0.92 } }));
     const v = validate(await jevClassifySegment({ ...req, segment: "PETERIS: hello" }, call), "PETERIS: hello", talkshow);
     expect(v).toMatchObject({ speakerId: null, invalid: ["speakerId"], needsReview: true });
     expect(v.confidence.speakerId).toBe(0);
   });
 
   it("fails only the field whose answer is missing or malformed", async () => {
-    const { call } = stub(answers({ shot: undefined, type: { type: "choice", choice: "dialogue" } }));
+    // with no type, the row is not dialogue, so the speaker comes from `subject`
+    const { call } = stub(answers({ shot: undefined, type: { type: "choice", choice: "dialogue" }, subject: choice("martins") }));
     const v = validate(await jevClassifySegment(req, call), req.segment, talkshow);
     expect(v).toMatchObject({ type: null, shot: null, speakerId: "martins" });
     expect(v.invalid.sort()).toEqual(["shot", "type"]);
     expect(v.confidence).toMatchObject({ type: 0, shot: 0 });
+  });
+
+  it("takes the speaker from `speaks` on dialogue and from `subject` on every other row", async () => {
+    const talk = await jevClassifySegment(req, stub(answers({ speaks: choice("anna", 0.97), subject: choice("laura", 0.6) })).call);
+    expect(talk).toMatchObject({ type: "dialogue", speakerId: "anna", confidence: { speakerId: 0.97 } });
+    const act = await jevClassifySegment(req, stub(answers({ type: choice("action"), speaks: choice(NO_PERSON), subject: choice("laura", 0.88) })).call);
+    expect(act).toMatchObject({ type: "action", speakerId: "laura", confidence: { speakerId: 0.88 } });
+  });
+
+  it("fails the speaker only when the answer it uses is malformed", async () => {
+    const broken = { type: "choice", choice: "anna" };
+    expect((await jevClassifySegment(req, stub(answers({ subject: broken })).call)).failed).toEqual([]);
+    expect((await jevClassifySegment(req, stub(answers({ speaks: broken })).call)).failed).toEqual(["speakerId"]);
   });
 
   it("nulls an option outside the allowed list through validation", async () => {
@@ -121,7 +137,7 @@ describe("jevClassifySegment with a stubbed API", () => {
 
   it("makes a line with quoted words for the cast dialogue, with the words as its text", async () => {
     const seg = "Jamie could say “Wait, can we pull that up?” and then the director switches";
-    const { call } = stub(answers({ type: choice("note", 0.6), speaker: choice("martins"), quote_is_line: { type: "noul", noul: 0.97 } }));
+    const { call } = stub(answers({ type: choice("note", 0.6), speaks: choice("martins"), quote_is_line: { type: "noul", noul: 0.97 } }));
     const out = await jevClassifySegment({ ...req, segment: seg }, call);
     expect(out).toMatchObject({ type: "dialogue", text: "Wait, can we pull that up?", speakerId: "martins" });
     expect((out.confidence as { type: number }).type).toBeCloseTo(0.97);

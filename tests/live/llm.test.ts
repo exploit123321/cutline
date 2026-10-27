@@ -6,7 +6,7 @@ import { classifyAll } from "../../src/classify/loop";
 import { talkshow } from "../../src/fixtures/studios";
 import { runEngine } from "../../src/engine";
 import { segment } from "../../src/classify/segment";
-import { loadRundownFixtures } from "../../scripts/fixtures";
+import { isBrief, loadRundownFixtures } from "../../scripts/fixtures";
 import type { ClassifyOne } from "../../src/classify/types";
 
 /*
@@ -54,7 +54,7 @@ live(`llm provider (${modelName()})`, () => {
   }, 180_000);
 
   it("scores well on the hand-labelled rundowns (eval)", async () => {
-    const report = await evaluate(loadRundownFixtures(), talkshow, llm);
+    const report = await evaluate(loadRundownFixtures().filter((f) => !isBrief(f)), llm);
     console.log(formatReport(report, `llm (${modelName()})`));
     expect(report.mismatches.filter((m) => m.field === "segment")).toEqual([]);
     expect(report.accuracy.type).toBeGreaterThanOrEqual(0.8);

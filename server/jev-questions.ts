@@ -51,9 +51,16 @@ export function jevQuestions(studio: Studio) {
       cue: "A production cue such as the show open, music, a bumper, a break, sound effects or titles.",
       note: "A note for the crew that is not seen or heard on air.",
     }),
-    speaker: choice("Which cast member is `line` about: the one who speaks, acts, or gets the shot?", {
+    // Two judgments, not one "speaks, acts, or gets the shot": on "ALEX: Jamie, what do you
+    // think?" one question split between the speaker and the person named. jev.ts reads
+    // `speaks` on dialogue and `subject` on every other row.
+    speaks: choice("Who says the words in `line`?", {
       ...people,
-      [NO_PERSON]: "No cast member: graphics, music, breaks, crew notes, or a shot of the whole studio.",
+      [NO_PERSON]: "Nobody in `cast`: the line has no words for a cast member to say on air.",
+    }),
+    subject: choice("Which cast member does `line` show on camera or describe doing something?", {
+      ...people,
+      [NO_PERSON]: "No single cast member: a graphic or a shared screen, music, a break, the whole group, or advice for the crew.",
     }),
     shot: choice("What shot size does `line` ask for?", {
       close: "A close-up: \"close on\", \"tight\", \"CU\".",

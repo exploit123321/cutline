@@ -162,9 +162,9 @@ Jev is a "decision model": it never writes text. It takes a `state` (text) and n
 
 - **Access:** directly through TypeSafe's own API, with the author's TypeSafe API key (`TYPESAFE_API_KEY` in `.env`). Use TypeSafe's official SDK if one exists for TypeScript/Node, otherwise its HTTP API. The request has a `state` (array of strings) and named, typed `questions`; responses are keyed by question name.
 - **Before writing the client, read TypeSafe's official API docs** for the endpoint, the auth header, the current model id, and the exact `choice` and `noul` schemas (how options and criteria are passed). Do not guess field names. Record what you found in `docs/decisions.md`. If the docs cannot be reached, stop and ask.
-- **One request per segment, three questions at once:**
+- **One request per segment, all questions at once:**
   - `type`: `choice` over the six row types, with a one-line definition of each in the criteria.
-  - `speaker`: `choice` over the studio's person ids plus `"none"`, with each person's name and aliases in the criteria.
+  - `speaks` and `subject`: two `choice` questions over the studio's person ids plus `"none"`, with each person's name and aliases in the criteria. `speaks` asks who says the words, and `subject` asks who the line shows or describes. Code reads `speaks` on dialogue rows and `subject` on all other rows, because one question that asked both split its answer on lines with two people.
   - `shot`: `choice` over `close`, `medium`, `wide`, `"unspecified"`.
   - Optional `unknown_speaker`: `noul` ("does this line name a speaker who is not in the cast list?"). If yes with probability > 0.5, set `speakerId = null` and flag the row red.
 - **State:** the cast list, the previous 5 classified rows (as short text), then the current segment. This is the "loop cascade": each row is decided with the rows before it as context.
@@ -183,7 +183,7 @@ Jev is a "decision model": it never writes text. It takes a `state` (text) and n
 
 ### Evaluation
 
-`npm run eval` runs every fixture in `src/fixtures/rundowns/` through the selected provider (`--provider jev|llm|mock`, or `--all`) and compares against hand-labelled expected rows. Print accuracy per field, average latency, total cost, and every mismatch. Also print how many wrong answers had confidence below `REVIEW_THRESHOLD` (caught by review) versus above it (slipped through). Save each run to `docs/eval/` with the date. The Jev vs LLM table is part of the portfolio.
+`npm run eval` runs every fixture in `src/fixtures/rundowns/`, and every sample with hand labels, through the selected provider (`--provider jev|llm|mock`, or `--all`) and compares against hand-labelled expected rows. Print accuracy per field and per fixture, average latency, total cost, and every mismatch. Also print how many wrong answers had confidence below `REVIEW_THRESHOLD` (caught by review) versus above it (slipped through), and a calibration table: answers grouped by score, with how many are right, and how many right answers the review flagged. Save each run to `docs/eval/` with the date. The Jev vs LLM table is part of the portfolio.
 
 ## Cut engine (deterministic)
 
