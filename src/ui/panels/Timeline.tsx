@@ -1,4 +1,5 @@
-import { useRef, type ReactNode } from "react";
+import { memo, useRef, type ReactNode } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { blockAt, totalDuration, useStore } from "../../state/store";
 import { timecode } from "../format";
 import { SegmentedControl } from "../motion/SegmentedControl";
@@ -29,9 +30,21 @@ const svg = (d: ReactNode) => (
 
 /** Transport and shot blocks. The playhead is the one clock everything else reads. */
 export function Timeline({ big = false }: { big?: boolean }) {
-  const { plan, studio, time, setTime, playing, setPlaying, stepShot, speed, setSpeed, subtitles, setSubtitles } = useStore();
+  // no playhead subscription here: only the timecode, the playhead and the block strip follow the clock
+  const { plan, setTime, playing, setPlaying, stepShot, speed, setSpeed, subtitles, setSubtitles } = useStore(
+    useShallow((s) => ({
+      plan: s.plan,
+      setTime: s.setTime,
+      playing: s.playing,
+      setPlaying: s.setPlaying,
+      stepShot: s.stepShot,
+      speed: s.speed,
+      setSpeed: s.setSpeed,
+      subtitles: s.subtitles,
+      setSubtitles: s.setSubtitles,
+    })),
+  );
   const total = totalDuration(plan);
-  const active = blockAt(plan, time);
   const trackRef = useRef<HTMLDivElement>(null);
 
   const seekFromPointer = (clientX: number) => {
@@ -61,8 +74,7 @@ export function Timeline({ big = false }: { big?: boolean }) {
         </button>
       </div>
       <div className="w-[150px] shrink-0">
-        {/* plain digits: a timecode changes 25 times a second, too fast to roll */}
-        <div className="num text-[13px] font-semibold text-fg">{timecode(time)}</div>
+        <Clock />
         <div className="num text-[10.5px] text-fg-3">of {timecode(total)}</div>
       </div>
       <div
@@ -73,35 +85,8 @@ export function Timeline({ big = false }: { big?: boolean }) {
           seekFromPointer(e.clientX);
         }}
       >
-        {plan.blocks.map((b, i) => {
-          const camIndex = studio.cameras.findIndex((c) => c.id === b.cameraId);
-          const cam = studio.cameras[camIndex];
-          const live = active === b;
-          return (
-            <button
-              key={i}
-              data-block
-              title={`${cam?.label} · ${b.shot} · ${b.start.toFixed(1)}–${(b.start + b.duration).toFixed(1)} s`}
-              onClick={() => setTime(b.start)}
-              className="absolute inset-y-0 overflow-hidden rounded-[6px] px-1.5 text-left text-[10px] font-semibold text-white/90 transition-[opacity,box-shadow] duration-200"
-              style={{
-                left: `${(b.start / total) * 100}%`,
-                width: `calc(${(b.duration / total) * 100}% - 2px)`,
-                background: `linear-gradient(180deg, ${cameraColor(camIndex)}, ${cameraColor(camIndex)}cc)`,
-                opacity: live ? 1 : 0.62,
-                boxShadow: live ? "inset 0 0 0 2px var(--color-tally), 0 0 14px -2px rgba(255,69,58,0.55)" : "inset 0 0 0 1px rgba(0,0,0,0.35)",
-              }}
-            >
-              <div data-block className="truncate pt-1">{cam?.label}</div>
-              <div data-block className="truncate font-normal text-white/70">{b.shot}</div>
-            </button>
-          );
-        })}
-        {total > 0 && (
-          <div className="pointer-events-none absolute -inset-y-1 w-[2px] -translate-x-1/2 rounded-full bg-tally shadow-[0_0_8px_rgba(255,69,58,0.8)]" style={{ left: `${(time / total) * 100}%` }}>
-            <div className="absolute -left-[4px] -top-1 h-2.5 w-2.5 rounded-full bg-tally" />
-          </div>
-        )}
+        <Blocks />
+        <Playhead total={total} />
       </div>
       <button
         onClick={() => setSubtitles(!subtitles)}
@@ -115,3 +100,56 @@ export function Timeline({ big = false }: { big?: boolean }) {
     </div>
   );
 }
+
+function Clock() {
+  const time = useStore((s) => s.time);
+  // plain digits: a timecode changes 25 times a second, too fast to roll
+  return <div className="num text-[13px] font-semibold text-fg">{timecode(time)}</div>;
+}
+
+function Playhead({ total }: { total: number }) {
+  const time = useStore((s) => s.time);
+  if (total <= 0) return null;
+  return (
+    <div className="pointer-events-none absolute -inset-y-1 w-[2px] -translate-x-1/2 rounded-full bg-tally shadow-[0_0_8px_rgba(255,69,58,0.8)]" style={{ left: `${(time / total) * 100}%` }}>
+      <div className="absolute -left-[4px] -top-1 h-2.5 w-2.5 rounded-full bg-tally" />
+    </div>
+  );
+}
+
+/** The shot blocks. Re-renders on a cut (the live block changes), not on every frame. */
+const Blocks = memo(function Blocks() {
+  const plan = useStore((s) => s.plan);
+  const studio = useStore((s) => s.studio);
+  const setTime = useStore((s) => s.setTime);
+  const live = useStore((s) => blockAt(s.plan, s.time));
+  const total = totalDuration(plan);
+  return (
+    <>
+      {plan.blocks.map((b, i) => {
+        const camIndex = studio.cameras.findIndex((c) => c.id === b.cameraId);
+        const cam = studio.cameras[camIndex];
+        const on = live === b;
+        return (
+          <button
+            key={i}
+            data-block
+            title={`${cam?.label} · ${b.shot} · ${b.start.toFixed(1)}–${(b.start + b.duration).toFixed(1)} s`}
+            onClick={() => setTime(b.start)}
+            className="absolute inset-y-0 overflow-hidden rounded-[6px] px-1.5 text-left text-[10px] font-semibold text-white/90 transition-[opacity,box-shadow] duration-200"
+            style={{
+              left: `${(b.start / total) * 100}%`,
+              width: `calc(${(b.duration / total) * 100}% - 2px)`,
+              background: `linear-gradient(180deg, ${cameraColor(camIndex)}, ${cameraColor(camIndex)}cc)`,
+              opacity: on ? 1 : 0.62,
+              boxShadow: on ? "inset 0 0 0 2px var(--color-tally), 0 0 14px -2px rgba(255,69,58,0.55)" : "inset 0 0 0 1px rgba(0,0,0,0.35)",
+            }}
+          >
+            <div data-block className="truncate pt-1">{cam?.label}</div>
+            <div data-block className="truncate font-normal text-white/70">{b.shot}</div>
+          </button>
+        );
+      })}
+    </>
+  );
+});

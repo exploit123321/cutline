@@ -12,12 +12,12 @@ const ISO_HEIGHT = 0.62;
  * background, as a mixer would key a host over a screen share. The camera is virtual,
  * square in front of the face, so it never takes one of the studio cameras.
  */
-export function IsoFeed({ person, index, tint, className }: { person: Person; index: number; tint: string; className?: string }) {
+export function IsoFeed({ person, index, tint, className, visible = true }: { person: Person; index: number; tint: string; className?: string; visible?: boolean }) {
   const head = headPosition(person);
   const pos = add(add(head, scale(forward(person.facingYaw), ISO_DISTANCE)), v(0, 0.03, 0));
   const aim = lookAngles(pos, head);
   return (
-    <View className={className}>
+    <View className={className} visible={visible}>
       <color attach="background" args={[tint]} />
       <PerspectiveCamera
         makeDefault
@@ -31,7 +31,9 @@ export function IsoFeed({ person, index, tint, className }: { person: Person; in
       <hemisphereLight args={["#dfe6f2", "#1a1d24", 0.9]} />
       <directionalLight position={[pos.x + 1.5, pos.y + 2, pos.z + 1]} intensity={2.2} />
       <directionalLight position={[head.x - 1, head.y + 1, head.z - 2]} intensity={1.2} color="#ffd2a6" />
-      <RealPerson person={person} index={index} />
+      <group dispose={null}>
+        <RealPerson person={person} index={index} />
+      </group>
     </View>
   );
 }

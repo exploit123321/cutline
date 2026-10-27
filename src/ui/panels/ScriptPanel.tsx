@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { SAMPLES } from "../../fixtures/samples";
+import { useShallow } from "zustand/react/shallow";
 import { useStore } from "../../state/store";
 import type { ProviderId } from "../../classify";
 import { RollingNumber } from "../motion/RollingNumber";
@@ -14,7 +15,23 @@ const PROVIDERS: { id: ProviderId; label: string; hint: string }[] = [
 const KEY_NAME = { jev: "TYPESAFE_API_KEY", llm: "ANTHROPIC_API_KEY" } as const;
 
 export function ScriptPanel() {
-  const { script, setScript, loadSample, provider, setProvider, parse, parsing, error, health, checkServer, rows, castNote } = useStore();
+  // a shallow pick, so the playhead ticking does not re-render the rundown
+  const { script, setScript, loadSample, provider, setProvider, parse, parsing, error, health, checkServer, rows, castNote } = useStore(
+    useShallow((s) => ({
+      script: s.script,
+      setScript: s.setScript,
+      loadSample: s.loadSample,
+      provider: s.provider,
+      setProvider: s.setProvider,
+      parse: s.parse,
+      parsing: s.parsing,
+      error: s.error,
+      health: s.health,
+      checkServer: s.checkServer,
+      rows: s.rows,
+      castNote: s.castNote,
+    })),
+  );
 
   useEffect(() => {
     void checkServer();

@@ -45,6 +45,7 @@ export function StudioView({ shadows = false, className = "absolute inset-0", bi
         minDistance={3}
         maxDistance={16.5}
       />
+      <group dispose={null}>
       <StudioSet studio={studio} shadows={shadows} />
       <Grid
         position={[0, 0.002, 0]}
@@ -85,6 +86,7 @@ export function StudioView({ shadows = false, className = "absolute inset-0", bi
         const state = cams.states[c.id];
         return state ? <CameraRig key={c.id} camera={c} state={state} labelHeight={big ? 0.022 : undefined} onPointerDown={() => setDrag({ kind: "camera", id: c.id })} /> : null;
       })}
+      </group>
     </View>
   );
 }

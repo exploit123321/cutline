@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { REVIEW_THRESHOLD, ROW_TYPES, SHOTS } from "../../model";
 import type { ConfidenceField, Row, Studio } from "../../model/types";
 import { rowAt, useStore } from "../../state/store";
@@ -29,14 +29,17 @@ function TextCell({ value, onCommit }: { value: string; onCommit: (v: string) =>
 
 const selectCls = "w-full cursor-pointer appearance-none bg-transparent outline-none [&>option]:bg-ink-900";
 
-function SheetRow({ row, studio, active, engineShot, onEdit, onSeek }: {
+/** Memoised: during playback only the row that becomes active (or stops being) re-renders. */
+const SheetRow = memo(function SheetRow({ row, studio, active, engineShot }: {
   row: Row;
   engineShot: string | undefined;
   studio: Studio;
   active: boolean;
-  onEdit: (e: Edit) => void;
-  onSeek: () => void;
 }) {
+  const edit = useStore((s) => s.edit);
+  const setTime = useStore((s) => s.setTime);
+  const onEdit = (e: Edit) => edit(row.id, e);
+  const onSeek = () => row.start !== null && setTime(row.start);
   const ref = useRef<HTMLTableRowElement>(null);
   useEffect(() => {
     if (active) ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -130,11 +133,15 @@ function SheetRow({ row, studio, active, engineShot, onEdit, onSeek }: {
       </td>
     </tr>
   );
-}
+});
 
 export function SheetPanel() {
-  const { plan, studio, reviewOnly, setReviewOnly, edit, time, setTime } = useStore();
-  const active = rowAt(plan, time);
+  const plan = useStore((s) => s.plan);
+  const studio = useStore((s) => s.studio);
+  const reviewOnly = useStore((s) => s.reviewOnly);
+  const setReviewOnly = useStore((s) => s.setReviewOnly);
+  // the playhead moves every frame; the sheet only needs to know which row is on
+  const activeId = useStore((s) => rowAt(s.plan, s.time)?.id ?? null);
   const rows = reviewOnly ? plan.rows.filter((r) => r.needsReview) : plan.rows;
   const review = plan.rows.filter((r) => r.needsReview).length;
 
@@ -207,10 +214,8 @@ export function SheetPanel() {
                   key={r.id}
                   row={r}
                   studio={studio}
-                  active={active?.id === r.id}
+                  active={activeId === r.id}
                   engineShot={plan.shots[r.id]}
-                  onEdit={(e) => edit(r.id, e)}
-                  onSeek={() => r.start !== null && setTime(r.start)}
                 />
               ))}
             </tbody>

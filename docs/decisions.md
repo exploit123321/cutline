@@ -92,6 +92,13 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 - **How the wording was checked.** Both questions were probed live on the 71 segments of the author's brief before they went in: quoted lines scored 0.95–0.99, the "Before"/"After" labels 0.07; style advice 0.8–0.97, placed moments ("show the poll here") 0.03–0.2. The labelled rundowns still score 37/37. No wording was tuned to single lines.
 - **Text.** Wrapping quotes are dropped from a line (`Alex: “So…”` → `So…`). When Jev says the quotes are spoken words, the row's text is just the quoted words, so subtitles show what is said, not the note around it. A note that becomes a screen gets a short title for its kind ("Article", "The numbers") instead of the whole sentence as a headline.
 
+## Performance (2026-10-27)
+Measured with headless Chrome on the author's RTX 3060, playing the *Late Line* sample: Show went from 30 to 51–58 fps and Plan from 18 to about 90 fps, with no shader links during playback (there were 398 in 6 s).
+- **Lines that change every frame do not use drei's `<Line>`**, which disposes its material whenever its points change. The frustums rewrite a fixed-size buffer in place.
+- **Shared GPU resources are never disposed by React.** Each view's content sits in a `<group dispose={null}>`, because R3F disposes every material and geometry on an unmounting mesh, including the shared ones.
+- **Views are hidden, not unmounted.** A covered program feed, idle cut-out squares and the multiview tiles stay mounted and use drei's `visible` prop. The cut flash is an overlay keyed by the cut, so a tile's 3D view is never rebuilt. Mounting a view clones rigged people and compiles shaders, which stalls a frame.
+- **Only the parts that move follow the clock.** The set and people are memoised. The sheet re-renders when the active row changes (memoised rows), the script panel takes a shallow pick, and the timeline's blocks re-render on a cut, while only the timecode and playhead follow every frame.
+
 ## Dependencies beyond the stack list
 - `@typesafe-ai/sdk`: the official Jev client (the spec asks for it if it exists).
 - `@fontsource-variable/afacad`: the UI font, self-hosted (asked and approved 2026-10-27).

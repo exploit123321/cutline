@@ -268,12 +268,18 @@ function drapes(): CanvasTexture {
   return drapeTexture;
 }
 
-/** A drape material for a wall `len` metres long: one fold every 0.6 m. */
+const drapeWalls = new Map<number, MeshStandardMaterial>();
+/** A drape material for a wall `len` metres long: one fold every 0.6 m. Shared by every view. */
 function drapeWall(len: number): MeshStandardMaterial {
-  const map = drapes().clone();
-  map.repeat.set(len / 0.6, 1);
-  map.needsUpdate = true;
-  return new MeshStandardMaterial({ map, roughness: 1 });
+  let m = drapeWalls.get(len);
+  if (!m) {
+    const map = drapes().clone();
+    map.repeat.set(len / 0.6, 1);
+    map.needsUpdate = true;
+    m = new MeshStandardMaterial({ map, roughness: 1 });
+    drapeWalls.set(len, m);
+  }
+  return m;
 }
 
 /**

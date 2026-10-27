@@ -44,29 +44,38 @@ const PLACE: Record<Exclude<Corner, "none">, string> = {
  * and the people come up as cut-out squares in the corner that keeps the content clear.
  * The speaker's square is a little bigger, framed in their subtitle colour.
  */
-export function ScreenLayer({ state, studio, brand }: { state: ScreenState; studio: Studio; brand: string }) {
+export function ScreenLayer({ state, brand }: { state: ScreenState; brand: string }) {
   const c = state.segment.content;
   const split = c.kind === "split";
   // a full screen leaves to the left as the studio comes back; a split panel goes back out to the right
   const x = (1 - state.enter) * 100 + state.exit * (split ? 100 : -100);
-  const corner = CORNER[c.kind];
+  // No z-index on purpose: the screen paints under the 3D canvas, so the people's squares
+  // (drawn on that canvas) can sit on top of it. The studio feed is narrowed to the part of
+  // the frame the screen does not cover (screenWipe).
   return (
-    <>
-      {/* No z-index on purpose: the screen paints under the 3D canvas, so the people's
-          squares (drawn on that canvas) can sit on top of it. The studio feed is narrowed
-          to the part of the frame the screen does not cover (screenWipe). */}
-      <div
-        className="pointer-events-none absolute bottom-0 right-0 top-0 overflow-hidden shadow-[-1cqw_0_3cqw_rgba(0,0,0,0.5)]"
-        style={{ width: split ? `${SPLIT_SCREEN * 100}%` : "100%", transform: `translateX(${x}%)` }}
-      >
-        <ScreenBody c={c} s={state} brand={brand} />
-      </div>
-      {corner !== "none" && (
-        <div className={`pointer-events-none absolute z-[14] flex gap-[1cqw] ${PLACE[corner]}`}>
+    <div
+      className="pointer-events-none absolute bottom-0 right-0 top-0 overflow-hidden shadow-[-1cqw_0_3cqw_rgba(0,0,0,0.5)]"
+      style={{ width: split ? `${SPLIT_SCREEN * 100}%` : "100%", transform: `translateX(${x}%)` }}
+    >
+      <ScreenBody c={c} s={state} brand={brand} />
+    </div>
+  );
+}
+
+/**
+ * The people's cut-out squares. Always mounted, hidden while no screen is up: mounting an
+ * iso view clones a rigged person and compiles its shaders, which would stall the cut
+ * every time a screen came up.
+ */
+export function Squares({ state, studio }: { state: ScreenState | null; studio: Studio }) {
+  const corner = state ? CORNER[state.segment.content.kind] : "none";
+  const shown = state !== null && corner !== "none";
+  return (
+    <div className={`pointer-events-none absolute z-[14] flex gap-[1cqw] ${PLACE[corner === "none" ? "right" : corner]}`} style={{ visibility: shown ? "visible" : "hidden" }}>
           {studio.people.map((p, i) => {
-            const talking = state.speakerId === p.id;
+            const talking = state?.speakerId === p.id;
             const colour = speakerColour(studio, p.id);
-            const pop = smooth((state.local - 0.3 - i * 0.09) / 0.35) * (1 - state.exit);
+            const pop = state ? smooth((state.local - 0.3 - i * 0.09) / 0.35) * (1 - state.exit) : 0;
             const size = talking ? 13 : 10.5;
             return (
               <div
@@ -80,7 +89,7 @@ export function ScreenLayer({ state, studio, brand }: { state: ScreenState; stud
                   boxShadow: talking ? `0 0 0 0.35cqw ${colour}, 0 1cqw 2.5cqw rgba(0,0,0,0.55)` : "0 0 0 0.2cqw rgba(255,255,255,0.75), 0 1cqw 2cqw rgba(0,0,0,0.5)",
                 }}
               >
-                <IsoFeed className="absolute inset-0" person={p} index={i} tint={tint(colour)} />
+                <IsoFeed className="absolute inset-0" person={p} index={i} tint={tint(colour)} visible={shown && pop > 0} />
                 <span
                   className="absolute bottom-[0.5cqw] left-[0.5cqw] rounded-[0.3cqw] bg-black/65 px-[0.6cqw] py-[0.15cqw] text-[max(1.15cqw,9px)] font-semibold"
                   style={{ color: talking ? colour : "#ececf2" }}
@@ -90,8 +99,6 @@ export function ScreenLayer({ state, studio, brand }: { state: ScreenState; stud
               </div>
             );
           })}
-        </div>
-      )}
-    </>
+    </div>
   );
 }

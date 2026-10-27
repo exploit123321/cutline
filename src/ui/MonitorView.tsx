@@ -3,7 +3,7 @@ import { camerasAt, screenAt, strapAt, subtitleAt, type Strap } from "../show";
 import { blockAt, useStore } from "../state/store";
 import { CameraFeed } from "./CameraFeed";
 import { timecode } from "./format";
-import { ScreenLayer, screenWipe } from "./screen/ScreenLayer";
+import { ScreenLayer, screenWipe, Squares } from "./screen/ScreenLayer";
 import { performanceOf, screensOf } from "./scene/showState";
 import { brandOf, firstName, initials, speakerColour } from "./speakers";
 
@@ -42,16 +42,16 @@ export function MonitorView({ variant = "compact", fit = false }: Props) {
       <div className="@container relative aspect-video w-full overflow-hidden rounded-[10px] bg-black shadow-[inset_0_0_0_1px_var(--color-line-strong)]">
         {block && camera ? (
           <>
-            {!covered && (
-              // the studio keeps the part of the frame the screen leaves; the view keeps its height
-              <CameraFeed
-                cameraId={camera.id}
-                shadows={show}
-                className="absolute bottom-0 top-0"
-                style={{ left: `${wipe.left * 100}%`, width: `${wipe.width * 100}%` }}
-              />
-            )}
-            {onScreen && <ScreenLayer state={onScreen} studio={studio} brand={brand} />}
+            {/* the studio keeps the part of the frame the screen leaves; hidden, not unmounted, when covered */}
+            <CameraFeed
+              cameraId={camera.id}
+              shadows={show}
+              className="absolute bottom-0 top-0"
+              style={{ left: `${wipe.left * 100}%`, width: `${Math.max(wipe.width, 0.001) * 100}%` }}
+              visible={!covered}
+            />
+            {onScreen && <ScreenLayer state={onScreen} brand={brand} />}
+            <Squares state={onScreen} studio={studio} />
             <div className="pointer-events-none absolute left-[2.5%] top-[4%] z-20 flex items-center gap-2">
               <span className="rounded-[4px] bg-tally px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-white">PGM</span>
               <span className="num rounded-[4px] bg-black/55 px-1.5 py-0.5 text-[11px] text-white/85">{timecode(time)}</span>

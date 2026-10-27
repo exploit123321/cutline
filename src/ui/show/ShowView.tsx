@@ -85,12 +85,10 @@ function CameraTile({ camera, state, cutKey }: { camera: Camera; state: CamState
   const look = TILE[state.status];
   return (
     <div className="min-w-0">
-      <div
-        key={cutKey}
-        className={`relative aspect-video overflow-hidden rounded-[8px] bg-black ${state.status === "pgm" ? "cut-flash" : ""}`}
-        style={{ boxShadow: look.ring }}
-      >
+      <div className="relative aspect-video overflow-hidden rounded-[8px] bg-black" style={{ boxShadow: look.ring }}>
         <CameraFeed cameraId={camera.id} />
+        {/* the flash restarts on each cut by remounting this overlay only, never the 3D view */}
+        {state.status === "pgm" && <span key={cutKey} className="cut-flash pointer-events-none absolute inset-0 z-[6] rounded-[8px]" />}
         <div className="pointer-events-none absolute inset-x-1.5 top-1.5 z-10 flex items-center justify-between">
           <span className="rounded-[4px] bg-black/60 px-1.5 py-px font-mono text-[10px] font-semibold text-white">{camera.label}</span>
           {look.tag && <span className={`rounded-[4px] px-1.5 py-px text-[9.5px] font-bold tracking-widest ${look.tagCls}`}>{look.tag}</span>}

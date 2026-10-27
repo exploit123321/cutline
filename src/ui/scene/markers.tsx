@@ -1,4 +1,10 @@
 import { Line } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo } from "react";
+import type { InterleavedBufferAttribute } from "three";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import type { Camera, Person, Vec3 } from "../../model/types";
 import { DEG, add, forward, headPosition, scale, toRad, v } from "../../geometry";
 import { ASPECT } from "../../model/constants";
@@ -85,13 +91,52 @@ const STATUS = {
   idle: { colour: "#8a90a0", label: "rgba(11,11,14,0.82)", dist: 2.0, width: 1, opacity: 0.35 },
 } as const;
 
+/** The frustum as 8 segments (4 rays, 4 rim edges), flat x,y,z pairs for LineSegments2. */
+function frustumSegments(origin: Vec3, corners: Vec3[]): number[] {
+  const out: number[] = [];
+  corners.forEach((c, i) => {
+    const next = corners[(i + 1) % corners.length] as Vec3;
+    out.push(origin.x, origin.y, origin.z, c.x, c.y, c.z, c.x, c.y, c.z, next.x, next.y, next.z);
+  });
+  return out;
+}
+
+/**
+ * Fat line segments whose vertex buffer is rewritten in place every render. drei's <Line>
+ * builds new geometry whenever its points change and disposes its material with it, which
+ * relinked the line shader every frame while cameras moved.
+ */
+function Segments({ positions, colour, width, opacity }: { positions: number[]; colour: string; width: number; opacity: number }) {
+  const size = useThree((s) => s.size);
+  const line = useMemo(() => {
+    const geometry = new LineSegmentsGeometry();
+    geometry.setPositions(new Float32Array(positions.length));
+    const material = new LineMaterial({ transparent: true, depthWrite: false });
+    const l = new LineSegments2(geometry, material);
+    l.frustumCulled = false;
+    return l;
+  }, [positions.length]);
+  useEffect(() => () => {
+    line.geometry.dispose();
+    line.material.dispose();
+  }, [line]);
+  useLayoutEffect(() => {
+    const start = line.geometry.attributes.instanceStart as InterleavedBufferAttribute;
+    (start.data.array as Float32Array).set(positions);
+    start.data.needsUpdate = true;
+    line.material.color.set(colour);
+    line.material.linewidth = width;
+    line.material.opacity = opacity;
+    line.material.resolution.set(size.width, size.height);
+  });
+  return <primitive object={line} />;
+}
+
 /** Overview camera: the body on its pedestal, the live frustum, and a label in tally colour. */
 export function CameraRig({ camera, state, labelHeight, onPointerDown }: CameraProps) {
   const p = camera.position;
   const look = STATUS[state.status];
   const corners = frustumCorners(p, state.aim.yaw, state.aim.pitch, state.fov, look.dist);
-  const tup = (q: Vec3): [number, number, number] => [q.x, q.y, q.z];
-  const lines: [number, number, number][][] = [...corners.map((c) => [tup(p), tup(c)]), [...corners.map(tup), tup(corners[0] as Vec3)]];
   const tag = state.status === "pgm" ? `${camera.label} · ON AIR` : state.status === "pvw" ? `${camera.label} · NEXT` : camera.label;
   return (
     <group>
@@ -104,9 +149,7 @@ export function CameraRig({ camera, state, labelHeight, onPointerDown }: CameraP
       >
         <BroadcastCamera height={p.y} yaw={state.aim.yaw} pitch={state.aim.pitch} status={state.status} fixed={camera.fixed} />
       </group>
-      {lines.map((pts, i) => (
-        <Line key={i} points={pts} color={look.colour} lineWidth={look.width} transparent opacity={look.opacity} />
-      ))}
+      <Segments positions={frustumSegments(p, corners)} colour={look.colour} width={look.width} opacity={look.opacity} />
       <Label text={tag} position={[p.x, p.y + 0.62, p.z]} color="#ffffff" background={look.label} height={labelHeight} />
     </group>
   );
@@ -120,12 +163,12 @@ export function ActionLine({ a, b }: { a: Person; b: Person }) {
   const len = Math.hypot(d.x, d.z) || 1;
   const ext = scale(v(d.x / len, 0, d.z / len), 2.2);
   const y = 0.05;
+  const [x0, z0, x1, z1] = [pa.x - ext.x, pa.z - ext.z, pb.x + ext.x, pb.z + ext.z];
+  // a stable array: drei's <Line> rebuilds (and disposes its material) when points change identity
+  const points = useMemo<[number, number, number][]>(() => [[x0, y, z0], [x1, y, z1]], [x0, z0, x1, z1]);
   return (
     <Line
-      points={[
-        [pa.x - ext.x, y, pa.z - ext.z],
-        [pb.x + ext.x, y, pb.z + ext.z],
-      ]}
+      points={points}
       color="#f2b84b"
       lineWidth={2.6}
       dashed

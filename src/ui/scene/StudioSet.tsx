@@ -1,6 +1,6 @@
 import { Environment } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { Studio } from "../../model/types";
 import { camerasAt } from "../../show";
 import { useStore } from "../../state/store";
@@ -17,8 +17,11 @@ type SetProps = {
   shadows?: boolean;
 };
 
-/** Floor, lights and set dressing. Mounted once per view (overview, program, each camera). */
-export function StudioSet({ studio, shadows = false }: SetProps) {
+/**
+ * Floor, lights and set dressing. Mounted once per view (overview, program, each camera).
+ * Memoised: the views re-render every frame for their camera, the set does not change.
+ */
+export const StudioSet = memo(function StudioSet({ studio, shadows = false }: SetProps) {
   const gl = useThree((s) => s.gl);
   const env = useMemo(() => studioEnv(gl), [gl]);
   return (
@@ -56,9 +59,9 @@ export function StudioSet({ studio, shadows = false }: SetProps) {
       <LightRig />
     </>
   );
-}
+});
 
-export function People({ studio }: { studio: Studio }) {
+export const People = memo(function People({ studio }: { studio: Studio }) {
   return (
     <>
       {studio.people.map((p, i) => (
@@ -66,7 +69,7 @@ export function People({ studio }: { studio: Studio }) {
       ))}
     </>
   );
-}
+});
 
 /** Camera bodies as other cameras see them, panning and lit by tally like in the overview. */
 export function CameraModels({ studio, except }: { studio: Studio; except?: string }) {
