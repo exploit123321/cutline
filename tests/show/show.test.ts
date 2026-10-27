@@ -16,6 +16,10 @@ import {
   peopleAt,
   SETTLE_TIME,
   strapAt,
+  SUB_LINE,
+  SUB_LINES,
+  subtitleAt,
+  subtitleChunks,
   wallAt,
 } from "../../src/show";
 import { alice, bob, tiny } from "../geometry/fixture";
@@ -161,5 +165,49 @@ describe("wallAt", () => {
     if (!gfx || gfx.start === null) throw new Error("no visual row");
     expect(wallAt(plan, gfx.start + 0.1)).toEqual({ kind: "gfx", text: gfx.text, fullScreen: true });
     expect(wallAt(plan, 0).kind).toBe("logo");
+  });
+});
+
+describe("subtitles", () => {
+  it("keeps every cue within two lines of 42 characters", () => {
+    const long = Array.from({ length: 40 }, (_, i) => `word${i}`).join(" ");
+    const chunks = subtitleChunks(long);
+    expect(chunks.length).toBeGreaterThan(1);
+    for (const c of chunks) expect(c.length).toBeLessThanOrEqual(SUB_LINE * SUB_LINES);
+    expect(chunks.join(" ")).toBe(long.replace(/^w/, "W"));
+  });
+
+  it("breaks at a sentence end and puts the text in sentence case", () => {
+    expect(subtitleChunks("Labvakar and welcome back to Evening Desk. tonight we have two guests")).toEqual([
+      "Labvakar and welcome back to Evening Desk.",
+      "Tonight we have two guests",
+    ]);
+    expect(subtitleChunks("not a disaster, a missed chance. look at the numbers")).toEqual([
+      "Not a disaster, a missed chance.",
+      "Look at the numbers",
+    ]);
+    // a short sentence stays with the next one instead of flashing up alone
+    expect(subtitleChunks("yes. we know the numbers")).toEqual(["Yes. We know the numbers"]);
+  });
+
+  it("shows the line on air with its speaker, and nothing between lines", async () => {
+    const plan = await samplePlan();
+    const m = plan.rows.find((r) => r.raw.startsWith("M:"));
+    if (!m || m.start === null || m.duration === null) throw new Error("no M row");
+    const s = subtitleAt(plan, m.start + 0.1);
+    expect(s?.speakerId).toBe("martins");
+    expect(s?.text.startsWith("Not a disaster")).toBe(true);
+    expect(subtitleAt(plan, 0.5)).toBeNull(); // the opening cue has no dialogue
+  });
+
+  it("moves to the next cue as the line goes on", async () => {
+    const plan = await samplePlan();
+    const r = plan.rows.find((x) => x.raw.startsWith("ANNA: Labvakar"));
+    if (!r || r.start === null || r.duration === null) throw new Error("no opening line");
+    const first = subtitleAt(plan, r.start + 0.05);
+    const last = subtitleAt(plan, r.start + r.duration - 0.05);
+    expect(first?.text).toBe("Labvakar and welcome back to Evening Desk.");
+    expect(last?.text).toBe("Tonight we have two guests");
+    expect(first?.key).not.toBe(last?.key);
   });
 });

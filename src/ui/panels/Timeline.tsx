@@ -29,7 +29,7 @@ const svg = (d: ReactNode) => (
 
 /** Transport and shot blocks. The playhead is the one clock everything else reads. */
 export function Timeline({ big = false }: { big?: boolean }) {
-  const { plan, studio, time, setTime, playing, setPlaying, stepShot, speed, setSpeed } = useStore();
+  const { plan, studio, time, setTime, playing, setPlaying, stepShot, speed, setSpeed, subtitles, setSubtitles } = useStore();
   const total = totalDuration(plan);
   const active = blockAt(plan, time);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -103,6 +103,14 @@ export function Timeline({ big = false }: { big?: boolean }) {
           </div>
         )}
       </div>
+      <button
+        onClick={() => setSubtitles(!subtitles)}
+        aria-pressed={subtitles}
+        title="Subtitles on the program output (C)"
+        className={`btn btn-sm !px-2 font-semibold tracking-wide ${subtitles ? "!text-fg !shadow-[inset_0_0_0_1px_var(--color-accent-line)]" : "!text-fg-3"}`}
+      >
+        CC
+      </button>
       <SegmentedControl size="sm" options={SPEEDS} value={String(speed)} onChange={(v) => setSpeed(Number(v))} />
     </div>
   );

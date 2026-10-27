@@ -26,12 +26,14 @@ export function usePlayback() {
   }, [playing]);
 }
 
-/** Space plays and pauses, arrows step between shots. Ignored while typing in a field. */
+/** Space plays and pauses, arrows step between shots, C toggles subtitles. Ignored while typing in a field. */
 export function useShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target;
       if (el instanceof Element && el.closest("input, textarea, select, button, [contenteditable]")) return;
+      // Ctrl+C and friends belong to the browser
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       const s = useStore.getState();
       if (e.code === "Space") {
         e.preventDefault();
@@ -40,6 +42,8 @@ export function useShortcuts() {
         s.stepShot(1);
       } else if (e.key === "ArrowLeft") {
         s.stepShot(-1);
+      } else if (e.key === "c" || e.key === "C") {
+        s.setSubtitles(!s.subtitles);
       }
     };
     window.addEventListener("keydown", onKey);

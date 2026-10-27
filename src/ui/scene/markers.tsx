@@ -45,7 +45,7 @@ export function PersonMarker({ person, talking, inShot, labelHeight, onPointerDo
         rotation={[Math.PI / 2, 0, 0]}
       />
       <Label
-        text={talking ? `● ${first}` : first}
+        text={talking ? `• ${first}` : first}
         position={[0, person.eyeHeight + 0.42, 0]}
         color={talking ? "#ffffff" : "#ececf2"}
         background={talking ? "rgba(91,124,250,0.92)" : "rgba(11,11,14,0.82)"}

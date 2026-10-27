@@ -1,8 +1,9 @@
 import { blockAt, rowAt, useStore } from "../state/store";
-import { camerasAt, strapAt, wallAt } from "../show";
+import { camerasAt, strapAt, subtitleAt, wallAt } from "../show";
 import { CameraFeed } from "./CameraFeed";
 import { performanceOf } from "./scene/showState";
 import { timecode } from "./format";
+import { firstName, speakerColour } from "./speakers";
 
 type Props = { variant?: "compact" | "show" };
 
@@ -19,6 +20,8 @@ export function MonitorView({ variant = "compact" }: Props) {
   const wall = wallAt(plan, time);
   const strapId = show ? strapAt(performanceOf(plan, studio), time) : null;
   const strap = studio.people.find((p) => p.id === strapId);
+  const subtitlesOn = useStore((s) => s.subtitles);
+  const sub = subtitlesOn ? subtitleAt(plan, time) : null;
   const names = block
     ? block.subjectIds.length === studio.people.length && studio.people.length > 1
       ? "Everyone"
@@ -26,7 +29,7 @@ export function MonitorView({ variant = "compact" }: Props) {
     : "";
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-[10px] bg-black shadow-[inset_0_0_0_1px_var(--color-line-strong)]">
+    <div className="@container relative aspect-video w-full overflow-hidden rounded-[10px] bg-black shadow-[inset_0_0_0_1px_var(--color-line-strong)]">
       {block && camera ? (
         <>
           <CameraFeed cameraId={camera.id} shadows={show} />
@@ -44,11 +47,12 @@ export function MonitorView({ variant = "compact" }: Props) {
             <span className="num rounded-[4px] bg-black/55 px-1.5 py-0.5 text-[11px] text-white/85">{timecode(time)}</span>
           </div>
           {strap && (
-            <div key={strap.id} className="strap-in pointer-events-none absolute bottom-[22%] left-[5%] z-20">
+            <div key={strap.id} className="strap-in pointer-events-none absolute bottom-[34%] left-[5%] z-20">
               <div className="rounded-t-[4px] bg-accent-strong px-3 py-1 font-display text-[clamp(11px,1.5vw,17px)] font-semibold text-white">{strap.name}</div>
               <div className="rounded-b-[4px] bg-black/75 px-3 py-0.5 text-[clamp(9px,1vw,12px)] text-white/75">{strap.aliases.includes("host") ? "Host" : "Guest"} · Evening Desk</div>
             </div>
           )}
+          {sub && <SubtitleLine key={sub.key} speaker={firstName(studio, sub.speakerId)} colour={speakerColour(studio, sub.speakerId)} text={sub.text} />}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 to-transparent px-4 pb-3 pt-8">
             <div className="font-mono text-[13px] font-semibold tracking-wide text-white">
               {camera.label} · {block.shot.toUpperCase()} · {names}
@@ -59,6 +63,28 @@ export function MonitorView({ variant = "compact" }: Props) {
       ) : (
         <div className="grid h-full place-items-center text-xs text-fg-3">No program yet</div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Burned-in subtitle: "Name: text", the name in the speaker's colour, white text on a
+ * dark box, centred above the camera label. Sized from the monitor's width.
+ */
+function SubtitleLine({ speaker, colour, text }: { speaker: string | null; colour: string; text: string }) {
+  return (
+    <div className="sub-in pointer-events-none absolute inset-x-[8%] bottom-[17%] z-30 flex justify-center">
+      <p className="max-w-[44ch] text-center font-medium leading-[1.42] text-white" style={{ fontSize: "clamp(12px, 3.3cqw, 26px)" }}>
+        {/* inline, so each wrapped line gets its own box, as broadcast subtitles do */}
+        <span className="rounded-[4px] bg-black/78 px-[0.45em] py-[0.12em] [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
+          {speaker && (
+            <span className="font-semibold" style={{ color: colour }}>
+              {speaker}:{" "}
+            </span>
+          )}
+          {text}
+        </span>
+      </p>
     </div>
   );
 }

@@ -35,6 +35,7 @@ export function Footer() {
         <span className="kbd">Space</span> play
         <span className="kbd">←</span>
         <span className="kbd">→</span> shots
+        <span className="kbd">C</span> subtitles
       </span>
     </footer>
   );

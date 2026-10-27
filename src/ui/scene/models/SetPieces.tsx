@@ -4,6 +4,7 @@ import { CanvasTexture, SRGBColorSpace } from "three";
 import { DEG } from "../../../geometry";
 import { wallAt, type WallContent } from "../../../show";
 import { useStore } from "../../../state/store";
+import { useCanvasFont } from "../../fonts";
 import { C, cylinder, mat, torus, unitBox } from "./shared";
 
 /*
@@ -73,7 +74,7 @@ function hash(s: string): number {
 }
 
 /** Draws the wall picture: the show logo, or a graphic built from the row text. */
-function drawWall(content: WallContent): HTMLCanvasElement {
+function drawWall(content: WallContent, family: string): HTMLCanvasElement {
   const W = 1024;
   const H = 576;
   const c = document.createElement("canvas");
@@ -92,7 +93,7 @@ function drawWall(content: WallContent): HTMLCanvasElement {
   for (let x = 0; x <= W; x += W / 8) g.strokeRect(x, 0, 0, H);
   for (let y = 0; y <= H; y += H / 4.5) g.strokeRect(0, y, W, 0);
 
-  const font = (px: number, weight = 600) => `${weight} ${px}px "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif`;
+  const font = (px: number, weight = 600) => `${weight} ${px}px ${family}`;
   if (content.kind === "logo") {
     const glow = g.createRadialGradient(W * 0.5, H * 0.5, 10, W * 0.5, H * 0.5, W * 0.55);
     glow.addColorStop(0, "rgba(124,156,255,0.35)");
@@ -148,12 +149,13 @@ function useWallContent(): WallContent {
 /** LED video wall on two posts; shows the logo or the current graphic. */
 export const VideoWall = memo(function VideoWall() {
   const content = useWallContent();
+  const family = useCanvasFont();
   const texture = useMemo(() => {
-    const t = new CanvasTexture(drawWall(content));
+    const t = new CanvasTexture(drawWall(content, family));
     t.colorSpace = SRGBColorSpace;
     t.anisotropy = 4;
     return t;
-  }, [content]);
+  }, [content, family]);
   useEffect(() => () => texture.dispose(), [texture]);
   const frame = mat("#0b0d12", { rough: 0.5, metal: 0.4 });
   return (

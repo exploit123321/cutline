@@ -65,8 +65,13 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 - **Fallback.** While a model loads, or if it fails, the built figure stands in (`Suspense` and an error boundary). Standing people (eye height ≥ 1.45 m) keep the built figure, because the rig only seats.
 - **Cost.** Each view gets a `SkeletonUtils.clone`. Geometry and textures are shared, so five views hold one copy of each texture. Frustum culling is off on the people, because their bounding spheres come from the standing bind pose.
 
+## Subtitles and font (2026-10-27)
+- **Subtitles** come from `subtitleAt(plan, t)` in `src/show/`: the dialogue line on air, split into cues of at most two lines of 42 characters (the usual broadcast limit). A cue ends early at a sentence end once it holds a third of the space, so a short "Yes." does not flash up alone. Each cue gets screen time in proportion to its words. The text goes into sentence case, because rundowns are often typed in lower case. On screen the format is `Name: text`, with the first name in the speaker's colour (`src/ui/speakers.ts`: yellow, cyan, pink, green…, kept away from tally red and preview green). Each wrapped line gets its own box.
+- **Afacad everywhere**, code-like text included. Its digits are equal width by default, so timecodes do not jitter. The font is bundled from `@fontsource-variable/afacad` (OFL-1.1), so the app stays offline. Canvas text (3D labels, the video wall) is drawn into textures, so it is drawn in the fallback font until Afacad has loaded and then drawn again (`useCanvasFont`). The base size is 14 px, because Afacad sets smaller than Segoe UI.
+
 ## Dependencies beyond the stack list
 - `@typesafe-ai/sdk`: the official Jev client (the spec asks for it if it exists).
+- `@fontsource-variable/afacad`: the UI font, self-hosted (asked and approved 2026-10-27).
 - `@anthropic-ai/sdk`: the official client for the llm comparison provider.
 - `@hono/node-server`: runs the hono app on Node.
 - `tsx`: runs the server and `npm run eval` from TypeScript.

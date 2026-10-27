@@ -2,7 +2,7 @@
 
 /*
  * Design system ported from Peek & Grep (same author, MIT): calm dark neutrals, one blue
- * accent for interaction, hairline inset borders, Segoe UI Variable, springy motion.
+ * accent for interaction, hairline inset borders, springy motion. One font everywhere: Afacad.
  * Broadcast colours sit on top: tally red for on air, green for preview.
  */
 @theme {
@@ -49,9 +49,10 @@
   --color-ink-200: #a3a3b2;
   --color-ink-100: #ececf2;
 
-  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  /* Afacad for everything, code-like text included; its digits are already equal width */
+  --font-sans: "Afacad Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Afacad Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Afacad Variable", "Segoe UI", system-ui, sans-serif;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -69,7 +70,8 @@ body {
   background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-sans);
-  font-size: 13px;
+  /* Afacad runs small and narrow next to Segoe UI, so the base size goes up a step */
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
   color-scheme: dark;
 }
@@ -248,6 +250,19 @@ body {
 .fade-up {
   animation: fade-up 520ms var(--ease-out) both;
   animation-delay: var(--d, 0ms);
+}
+
+/* a new subtitle cue fades in quickly, like a caption cut */
+@keyframes sub-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.sub-in {
+  animation: sub-in 120ms linear both;
 }
 
 /* name strap wipes in from the left */

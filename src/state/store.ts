@@ -34,6 +34,8 @@ type State = {
   /** plan: script, sheet and preview; show: the full-screen show with every camera live */
   mode: Mode;
   speed: number;
+  /** burned-in subtitles on the program output */
+  subtitles: boolean;
 
   setScript: (s: string) => void;
   loadSample: () => void;
@@ -47,6 +49,7 @@ type State = {
   setDrag: (d: Drag) => void;
   setMode: (m: Mode) => void;
   setSpeed: (s: number) => void;
+  setSubtitles: (on: boolean) => void;
   /** jump to the start of the next (+1) or previous (-1) shot */
   stepShot: (dir: 1 | -1) => void;
   move: (kind: "person" | "camera", id: string, x: number, z: number) => void;
@@ -81,6 +84,7 @@ export const useStore = create<State>()((set, get) => ({
   drag: null,
   mode: "plan",
   speed: 1,
+  subtitles: true,
 
   setScript: (script) => set({ script }),
   loadSample: () => set({ script: sample }),
@@ -140,6 +144,7 @@ export const useStore = create<State>()((set, get) => ({
   setDrag: (drag) => set({ drag }),
   setMode: (mode) => set({ mode }),
   setSpeed: (speed) => set({ speed }),
+  setSubtitles: (subtitles) => set({ subtitles }),
   stepShot: (dir) => {
     const { plan: p, time } = get();
     if (!p.blocks.length) return;

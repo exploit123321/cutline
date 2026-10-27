@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { CanvasTexture, LinearFilter, SRGBColorSpace } from "three";
+import { useCanvasFont } from "../fonts";
 
 type Props = {
   text: string;
@@ -14,9 +15,10 @@ type Props = {
  * (drei <Text> fetches a font) so the app keeps working offline.
  */
 export function Label({ text, position, color = "#e2e7ec", background = "rgba(10,12,16,0.82)", height = 0.032 }: Props) {
+  const family = useCanvasFont();
   const { texture, aspect } = useMemo(() => {
     const scale = 4;
-    const font = `600 ${13 * scale}px Inter, system-ui, sans-serif`;
+    const font = `600 ${14 * scale}px ${family}`;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("2d canvas unavailable");
@@ -38,7 +40,7 @@ export function Label({ text, position, color = "#e2e7ec", background = "rgba(10
     tex.colorSpace = SRGBColorSpace;
     tex.minFilter = LinearFilter;
     return { texture: tex, aspect: w / h };
-  }, [text, color, background]);
+  }, [text, color, background, family]);
 
   useEffect(() => () => texture.dispose(), [texture]);
 

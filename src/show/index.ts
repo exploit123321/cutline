@@ -276,3 +276,60 @@ export function wallAt(plan: Plan, t: number): WallContent {
   if (r?.type === "visual") return { kind: "gfx", text: r.text, fullScreen: /full[\s-]?screen|\bfs\b/i.test(r.text) };
   return { kind: "logo" };
 }
+
+// ---------- Subtitles ----------
+
+/** Broadcast subtitle limits: two lines of at most 42 characters on screen at once. */
+export const SUB_LINE = 42;
+export const SUB_LINES = 2;
+
+export type Subtitle = {
+  speakerId: string | null;
+  text: string;
+  /** stable per cue, so the UI can animate a change */
+  key: string;
+};
+
+/** Sentence case for the screen: rundowns are often typed in lower case. */
+function sentenceCase(text: string): string {
+  return text.replace(/(^\s*|[.!?]\s+)(\p{Ll})/gu, (_, gap: string, ch: string) => gap + ch.toUpperCase());
+}
+
+/**
+ * Split a line into on-screen cues that fit SUB_LINES × SUB_LINE characters.
+ * A cue ends early at a sentence end once it holds at least a third of the space.
+ */
+export function subtitleChunks(text: string, max = SUB_LINE * SUB_LINES): string[] {
+  const words = sentenceCase(text.trim()).split(/\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const next = cur ? `${cur} ${w}` : w;
+    if (cur && next.length > max) {
+      chunks.push(cur);
+      cur = w;
+    } else {
+      cur = next;
+    }
+    if (/[.!?]$/.test(cur) && cur.length >= max / 3) {
+      chunks.push(cur);
+      cur = "";
+    }
+  }
+  if (cur) chunks.push(cur);
+  return chunks;
+}
+
+/** The subtitle on screen at t: the cue of the dialogue line on air, timed by its share of the words. */
+export function subtitleAt(plan: Plan, t: number): Subtitle | null {
+  const r = plan.rows.find((x) => onAir(x) && t >= (x.start as number) && t < (x.start as number) + (x.duration as number));
+  if (!r || r.type !== "dialogue" || !r.text.trim()) return null;
+  const chunks = subtitleChunks(r.text);
+  const weights = chunks.map((c) => c.split(/\s+/).length);
+  const total = weights.reduce((a, b) => a + b, 0);
+  const progress = ((t - (r.start as number)) / (r.duration as number)) * total;
+  let acc = 0;
+  let i = 0;
+  while (i < chunks.length - 1 && progress >= acc + (weights[i] as number)) acc += weights[i++] as number;
+  return { speakerId: r.speakerId, text: chunks[i] as string, key: `${r.id}:${i}` };
+}
