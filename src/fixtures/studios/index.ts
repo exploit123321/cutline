@@ -1,5 +1,6 @@
 import { StudioSchema } from "../../model/schema";
 import type { Studio } from "../../model/types";
+import podcastJson from "./podcast.json";
 import talkshowJson from "./talkshow.json";
 
 /** Studios are edited as JSON; parsing here means a typo fails loudly at load time. */
@@ -8,3 +9,4 @@ export function loadStudio(json: unknown): Studio {
 }
 
 export const talkshow: Studio = loadStudio(talkshowJson);
+export const podcast: Studio = loadStudio(podcastJson);

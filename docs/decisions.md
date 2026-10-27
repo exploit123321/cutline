@@ -76,6 +76,16 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 - **Subtitles have no box.** A dark outline (`-webkit-text-stroke` painted under the fill) and a soft shadow keep them readable.
 - **Show layout.** Now/Next is only as tall as its content (status, NOW, NEXT), and the multiview keeps its 16:9 tiles. The program takes the largest 16:9 that fits the rest of the column (a size container with `min(100cqw, (100cqh − strip) · 16/9)`).
 
+## Shared screens (2026-10-27)
+- **Where the rule lives.** The engine knows only that a `visual` row starts a screen segment and that talk rides on it (rule 9 in `CLAUDE.md`), so the cut list and the timeline match what goes to air. Everything visual is in `src/show/screen.ts`: segments, content kind, on-screen actions and timing, all pure functions of `(plan, t)` with tests.
+- **Rundown syntax.** `[SCREEN: kind | title | item | item…]`, for example `[SCREEN: poll | Should the night bus stay? | Yes 64 | No 21]`. The kind is read from the first part (article, chart, clip, website, poll, compare, split, recap; anything else is a picture). Plain graphics lines such as `[GFX: budget chart full screen]` still work.
+- **Actions come from the talk.** "right here", "take a look" or "see what I mean" zoom in. "Scroll" scrolls. "Click" moves the cursor and clicks. "This?" points. "Increase" or "numbers" circles the jump and keeps it drawn. "Pause" stops the clip, and "go back" steps it back 3 s. A laugh inside a segment is a reaction shot of the studio.
+- **The people are cut-out squares**: one virtual iso camera per person, square, 1.6 m in front of the face, the person alone on a dark tint of their subtitle colour. The iso camera is virtual, so it never takes one of the three studio cameras, which the cut list may need. The speaker's square is larger and framed in their colour. The squares go to the corner the content leaves clear (a chart's newest values are on the right, so the squares go left; on a comparison they stack in the gap between the pictures; a split has none).
+- **Layering.** The 3D views share one canvas above the page. So the screen paints under the canvas (no z-index), the squares draw on the canvas on top of it, and the studio feed is narrowed to the part of the frame the screen leaves (`screenWipe`). The screen pushes the studio off to the left as it comes in, and uncovers it from the right as it goes.
+- **Visuals are drawn in code**: a news page, a bar chart, a video player, a cropped browser, a poll, route maps, a topic card and a recap. Nothing is downloaded, and nothing claims to be a real publication. The city, paper and transit site are invented.
+- **Room.** Floor, drape walls and a ceiling grid close the studio (36 × 36 × 10 m). The orbit limits keep the eye inside it, so no angle shows empty space.
+- **Second sample.** `Late Line` is the user's script turned into a rundown: three hosts (Alex, Jamie, Sam, with the optional `role` field on Person) and eight screen moments. It is not in the eval set yet, because its rows have no hand labels.
+
 ## Dependencies beyond the stack list
 - `@typesafe-ai/sdk`: the official Jev client (the spec asks for it if it exists).
 - `@fontsource-variable/afacad`: the UI font, self-hosted (asked and approved 2026-10-27).

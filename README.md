@@ -2,7 +2,7 @@
 
 **AI reads text. Code does geometry.** Cutline turns a messy live-show rundown into a shot list, then plans every cut with a deterministic, unit-tested engine. AI is used in exactly one place: classifying lines of text (dialogue, action, cue…, who speaks, any requested shot size). Camera choice, framing, the 180° rule and cut timing are plain TypeScript functions. Every AI output is validated against a schema, and anything invalid or below 0.7 confidence is flagged for a human instead of being silently accepted.
 
-![Cutline Show mode: the sample rundown played back, with the 3D studio, program output and every camera live](docs/cutline.gif)
+![Cutline Show mode: the Late Line sample, with screen shares, the hosts as cut-out squares, the 3D studio and every camera live](docs/cutline.gif)
 
 ## Run it (no API key needed)
 
@@ -11,7 +11,7 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Press **Load sample**, then **Parse**, then **Play**. The default `mock` classifier is rule-based and works offline.
+Press **Load sample** (pick *Evening Desk*, a talk show, or *Late Line*, three hosts with screen shares), then **Parse**, then **Play**. The default `mock` classifier is rule-based and works offline.
 
 ## Use the Jev classifier
 
@@ -55,6 +55,8 @@ The one mock miss is on purpose: `she continues:` after a line from Mārtiņš. 
 4. **Cut engine** (`src/engine/`): for each row it chooses a shot size, checks which cameras see the subject at that FOV and see their face (≤ 60° off), keeps the 180° line of the current two-person exchange, scores `1·(1 − frontality/90) + 0.3·shotMatch − 1·sameAsPrevious` (ties by camera id), falls back to the widest camera that sees everyone, times rows (words ÷ 2.5 s, min 1.5 s, holds under 2 s merge into the previous shot), and writes a one-line reason.
 5. **Preview** (`src/ui/`): one canvas with drei `<View>`s, the studio overview and the program monitor rendered from the live camera at its FOV, plus a timeline. Drag people or cameras in the overview and the engine re-plans live.
 6. **Show** (the **Show** switch in the title bar): the plan played back on one playhead. The big 3D studio shows the live frustum in tally red and the next camera in green, the active 180° line, and a ring under whoever talks. Next to it are the program output (a news lower-third on each person's first line that goes out on the next cut or phrase, full-screen graphics, and subtitles as `Name: text` with one colour per person; the camera, shot and reason sit in a strip under the picture), a multiview with every camera's own picture, and a Now/Next panel with the countdown to the next cut. `Space` plays, `←` and `→` step between shots, `C` (or the **CC** button) turns subtitles on and off, and the speed is 0.5×, 1× or 2×.
+
+On a shared screen (`[SCREEN: article | …]` in the rundown) the screen slides over the program, and the people come up as cut-out squares in a free corner, the speaker larger and framed in their colour. The talk drives the screen: "look right here" zooms, "scroll down" scrolls, "click on that" clicks, "pause it there" stops the clip. See the *Late Line* sample.
 
 What moves in the show comes from `src/show/`, pure functions of `(plan, studio, t)` with unit tests, so scrubbing always gives the same picture. An operated camera that is off air pans and zooms to its next shot during the last 1.6 s before the cut and is still 0.25 s before it. Fixed cameras never move. People turn to the speaker, the speaker turns to the person they address (or to the camera when nobody spoke yet), and the rundown's "laughs", "nods" and "turns to X" play out. The video wall shows the show logo, or the graphic during a visual row. Nothing here changes a cut: the engine has already decided them.
 

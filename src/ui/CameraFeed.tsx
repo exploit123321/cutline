@@ -1,16 +1,17 @@
 import { PerspectiveCamera, View } from "@react-three/drei";
+import type { CSSProperties } from "react";
 import { DEG } from "../geometry";
 import { camerasAt } from "../show";
 import { useStore } from "../state/store";
 import { CameraModels, People, StudioSet } from "./scene/StudioSet";
 
-type Props = { cameraId: string; shadows?: boolean; className?: string };
+type Props = { cameraId: string; shadows?: boolean; className?: string; style?: CSSProperties };
 
 /**
  * What one studio camera sees right now: its position, its animated pan, tilt and
  * zoom. The same feed drives the program monitor and the multiview tiles.
  */
-export function CameraFeed({ cameraId, shadows = false, className = "absolute inset-0" }: Props) {
+export function CameraFeed({ cameraId, shadows = false, className = "absolute inset-0", style }: Props) {
   const studio = useStore((s) => s.studio);
   const plan = useStore((s) => s.plan);
   const time = useStore((s) => s.time);
@@ -18,7 +19,7 @@ export function CameraFeed({ cameraId, shadows = false, className = "absolute in
   const state = camerasAt(plan, studio, time).states[cameraId];
   if (!camera || !state) return null;
   return (
-    <View className={className}>
+    <View className={className} style={style}>
       {/* Pose is passed as props, not set in an effect: the View mounts its children
           after this component's effects run. three.js cameras look down -z; YXZ applies
           yaw then pitch, matching forward(yaw, pitch). */}

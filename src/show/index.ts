@@ -3,6 +3,9 @@ import type { Plan, ShotBlock } from "../engine";
 import { aimAt, centroid, headPosition, lookAngles, type Aim } from "../geometry";
 import type { Person, Row, Studio, Vec3 } from "../model/types";
 
+export * from "./screen";
+import { screenContent } from "./screen";
+
 /*
  * What the show looks like at time t: where each camera points, which one is on air,
  * who talks and where everyone looks. Pure functions of (plan, studio, t), so scrubbing
@@ -60,6 +63,21 @@ function restAim(studio: Studio, cameraId: string): Aim {
   return aimAt(cam, centroid(studio.people.map(headPosition)));
 }
 
+/** A slow camera move written in the rundown: +1 pushes in, -1 zooms out, 0 holds. */
+export function moveOf(plan: Plan, block: ShotBlock): -1 | 0 | 1 {
+  const text = plan.rows
+    .filter((r) => block.rowIds.includes(r.id))
+    .map((r) => r.text.toLowerCase())
+    .join(" ");
+  if (/\b(push(es)? in|move in|moves in|zoom in|creep in)\b/.test(text)) return 1;
+  if (/\b(zoom out|zooms out|pull (out|back)|pull wide)\b/.test(text)) return -1;
+  return 0;
+}
+
+/** How far a push-in tightens, and a zoom-out widens, the FOV over the shot. */
+export const PUSH_IN = 0.22;
+export const ZOOM_OUT = 0.3;
+
 export type ShowCameras = {
   states: Record<string, CamState>;
   pgm: string | null;
@@ -87,12 +105,17 @@ export function camerasAt(plan: Plan, studio: Studio, t: number): ShowCameras {
       const reframe = prev && prev.cameraId === cam.id ? smooth((t - block.start) / REFRAME_TIME) : 1;
       let runStart = block.start;
       for (let i = cur - 1; i >= 0 && blocks[i]?.cameraId === cam.id; i--) runStart = (blocks[i] as ShotBlock).start;
+      // a written move ("slow push in") runs over the whole shot, inside the lens range
+      const move = moveOf(plan, block);
+      const p = smooth((t - block.start) / Math.max(block.duration, 1e-6));
+      const k = move > 0 ? 1 - PUSH_IN * p : move < 0 ? 1 + ZOOM_OUT * p : 1;
+      const base = prev && reframe < 1 ? lerp(prev.fov, block.fov, reframe) : block.fov;
       states[cam.id] = {
         status: "pgm",
         aim: prev && reframe < 1 ? lerpAim(prev.aim, block.aim, reframe) : block.aim,
-        fov: prev && reframe < 1 ? lerp(prev.fov, block.fov, reframe) : block.fov,
+        fov: Math.min(cam.fovRange[1], Math.max(cam.fovRange[0], base * k)),
         onAir: Math.max(0, t - runStart),
-        moving: reframe < 1 ? 1 : 0,
+        moving: reframe < 1 || (move !== 0 && p > 0 && p < 1) ? 1 : 0,
       };
       continue;
     }
@@ -346,7 +369,8 @@ export type WallContent = { kind: "logo" } | { kind: "gfx"; text: string; fullSc
 /** What the set's video wall (and, for full-screen graphics, the program output) shows. */
 export function wallAt(plan: Plan, t: number): WallContent {
   const r = plan.rows.find((x) => onAir(x) && t >= (x.start as number) && t < (x.start as number) + (x.duration as number));
-  if (r?.type === "visual") return { kind: "gfx", text: r.text, fullScreen: /full[\s-]?screen|\bfs\b/i.test(r.text) };
+  // the wall shows the screen's title, not the rundown's "kind | title | items" line
+  if (r?.type === "visual") return { kind: "gfx", text: screenContent(r.text).title, fullScreen: /full[\s-]?screen|\bfs\b/i.test(r.text) };
   return { kind: "logo" };
 }
 

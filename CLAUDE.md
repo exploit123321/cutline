@@ -209,6 +209,7 @@ Input: `Show`. Output: the same rows with `cameraId`, `fov`, `start`, `duration`
 6. **No candidate**: fall back to the widest camera that sees everyone. Set `reason` to say so and set `needsReview = true`.
 7. **Timing**: dialogue duration = word count / 2.5 seconds, minimum 1.5 s. Other rows default to 2 s. Minimum shot hold is 2 s: if a row is shorter, merge it into the previous shot unless it is a `cut` row. `start` is the cumulative sum.
 8. **Reason**: always fill a short sentence with the deciding factors, shown in the sheet and the monitor.
+9. **Screen segments**: a `visual` row puts a shared screen on air. Dialogue after it rides on that shot (no cut, reason "On screen: …") until a `cut`, a `cue` or the next `visual`. An `action` inside gets its own reaction shot, and the screen comes back after it.
 
 Every rule above gets at least one unit test with a tiny fixture studio (2 people, 3 cameras) whose correct answer can be checked by hand.
 
@@ -218,7 +219,7 @@ Single page, three panels, usable at 1280×800 and above (no mobile requirement)
 
 1. **Script**: textarea for the pasted rundown, provider picker (`mock` / `llm`), a "Parse" button, a "Load sample" button.
 2. **Sheet**: editable grid of rows. Columns: #, type, speaker, text, shot, camera, start, duration, reason. Cells with confidence below the threshold are highlighted yellow; validation failures red. Editing a cell sets `locked = true` and re-runs the engine. A filter for "needs review only".
-3. **Studio + Monitor**: left, a 3D overview with people as simple capsules with name labels, cameras as small bodies with view frustum lines, the active camera highlighted. Right, the program monitor: the scene rendered from the active camera with its FOV, 16:9, with a label strip under the picture like `CAM 2 · MEDIUM · Anna` (the picture itself carries only what goes to air: graphics, the name strap, subtitles).
+3. **Studio + Monitor**: left, a 3D overview with people as simple capsules with name labels, cameras as small bodies with view frustum lines, the active camera highlighted. Right, the program monitor: what goes to air, 16:9: the active camera with its FOV, or the shared screen with the people as cut-out squares; the name strap, subtitles and show bug on top. Camera and shot are shown by the tallies and the sheet, not on the picture.
 4. **Timeline** under the preview: blocks per shot, coloured by camera, a playhead, play/pause, and clicking a block jumps there. The sheet highlights the active row.
 
 Studio editing in v1 is through a JSON file in `src/fixtures/studios/`. Drag-to-move people and cameras is stage 5.
@@ -259,6 +260,7 @@ Visual style: dark, calm, broadcast-control-room feel. One accent colour for the
 - Off-air operated cameras pan to their next shot before the cut. People turn to the speaker, and "laughs", "nods" and "turns to X" play out. The video wall follows visual rows. All of this comes from pure functions in `src/show/` with tests. It never changes the engine's decisions.
 - Three.js models for people (jointed, seated or standing), cameras (pedestal or tripod, pan/tilt, tally) and the set. The part-list presets remain as the fallback.
 - UI in the Peek & Grep design system (tokens, pill switch, rolling digits, motion).
+- Shared screens (article, chart, clip, website, poll, comparison, split, recap) drawn in code, with on-screen actions read from the talk (zoom, scroll, click, pause, highlight) and each person as a cut-out square in the corner that keeps the content clear. A second sample, `src/fixtures/samples/podcast-01.txt`, uses them all.
 - ✅ Scrubbing to the same time gives the same picture; a fixed camera never moves; an off-air camera is framed on its next shot before the cut.
 
 ## Sample rundown (put in `src/fixtures/rundowns/talkshow-01.txt`)

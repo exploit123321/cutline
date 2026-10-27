@@ -9,6 +9,8 @@ export const PersonSchema = z.object({
   position: Vec3Schema,
   facingYaw: z.number(),
   eyeHeight: z.number().positive().max(2.5),
+  /** shown on the lower-third, e.g. "Host"; without it the strap says Host or Guest from the aliases */
+  role: z.string().optional(),
 });
 
 export const CameraSchema = z.object({

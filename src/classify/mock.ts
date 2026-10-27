@@ -4,7 +4,7 @@ import { explicitShot, firstMention, norm, resolveSpeaker, slug } from "./text";
 import type { ClassifyOne, ContextRow, RawClassification } from "./types";
 
 const TAGS: [RegExp, RowType][] = [
-  [/^(gfx|graphic|graphics|lower third|strap|vt|video|fullscreen|full screen|ots)$/, "visual"],
+  [/^(gfx|graphic|graphics|lower third|strap|vt|video|fullscreen|full screen|ots|screen|screen share|share|clip|article|chart|graph|poll|website|browser|image|photo|screenshot|compare|recap)$/, "visual"],
   [/^(cue|sfx|music|break|bumper|sting|stinger|titles|applause|audio)$/, "cue"],
   [/^(cut|cam|camera)$/, "cut"],
   [/^(note|notes|nb|producer|prod)$/, "note"],

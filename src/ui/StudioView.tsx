@@ -35,7 +35,16 @@ export function StudioView({ shadows = false, className = "absolute inset-0", bi
   return (
     <View className={className}>
       <PerspectiveCamera makeDefault position={big ? [0, 8, 15.5] : [2.2, 6.8, 10.5]} fov={36} />
-      <OrbitControls makeDefault enabled={!drag} target={big ? [0, 0.3, 1.6] : [0, 0.6, 0.4]} maxPolarAngle={Math.PI / 2.05} minDistance={3} maxDistance={22} />
+      {/* limits keep the eye inside the room: never under the floor, through the ceiling or a wall */}
+      <OrbitControls
+        makeDefault
+        enabled={!drag}
+        target={big ? [0, 0.3, 1.6] : [0, 0.6, 0.4]}
+        minPolarAngle={1}
+        maxPolarAngle={Math.PI / 2.05}
+        minDistance={3}
+        maxDistance={16.5}
+      />
       <StudioSet studio={studio} shadows={shadows} />
       <Grid
         position={[0, 0.002, 0]}

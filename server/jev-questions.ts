@@ -37,7 +37,7 @@ export function jevQuestions(studio: Studio) {
     type: choice("What kind of beat is `line`?", {
       dialogue: "Someone speaks on air. The line is their words, often after a name prefix such as \"ANNA:\".",
       action: "A person does something visible without speaking, such as laughs, turns or nods.",
-      visual: "Graphics or video on screen: full-screen GFX, charts, lower thirds, video playback.",
+      visual: "Graphics or video on screen: full-screen GFX, charts, lower thirds, video playback, a shared screen (article, website, poll).",
       cut: "A direction to change the camera shot, such as \"cut to\", \"back to\", \"close on\" or \"[CUT TO WIDE]\".",
       cue: "A production cue such as the show open, music, a bumper, a break, sound effects or titles.",
       note: "A note for the crew that is not seen or heard on air.",

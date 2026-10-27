@@ -6,8 +6,7 @@ import { camerasAt } from "../../show";
 import { useStore } from "../../state/store";
 import { BroadcastCamera } from "./models/BroadcastCamera";
 import { RealPerson } from "./models/RealPerson";
-import { DETAILED, LightRig } from "./models/SetPieces";
-import { C, mat } from "./models/shared";
+import { DETAILED, LightRig, Room } from "./models/SetPieces";
 import { PresetModel } from "./PresetModel";
 import { DEG } from "../../geometry";
 import { studioEnv } from "./studioEnv";
@@ -25,7 +24,7 @@ export function StudioSet({ studio, shadows = false }: SetProps) {
   return (
     <>
       <color attach="background" args={["#08090c"]} />
-      <fog attach="fog" args={["#08090c", 14, 30]} />
+      <fog attach="fog" args={["#08090c", 20, 48]} />
       {/* soft reflections for metal and glass; one shared map, no HDR download */}
       <Environment map={env} environmentIntensity={0.35} />
       <hemisphereLight args={["#c9d4e6", "#1a1d24", 0.55]} />
@@ -43,9 +42,7 @@ export function StudioSet({ studio, shadows = false }: SetProps) {
       />
       <directionalLight position={[-5, 4, 5]} intensity={0.7} color="#a9bcff" />
       <directionalLight position={[0, 5, -6]} intensity={1.3} color="#ffd2a6" />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow material={mat(C.floor, { rough: 0.55, metal: 0.15 })}>
-        <planeGeometry args={[40, 40]} />
-      </mesh>
+      <Room />
       {studio.props.map((p, i) => {
         const Detailed = DETAILED[p.preset];
         return Detailed ? (

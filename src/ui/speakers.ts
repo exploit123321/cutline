@@ -15,3 +15,18 @@ export function firstName(studio: Studio, id: string | null): string | null {
   const p = studio.people.find((x) => x.id === id);
   return p ? (p.name.split(" ")[0] ?? p.name) : null;
 }
+
+/** The show's name, from the studio name: "Late Line — podcast set" → "Late Line". */
+export function brandOf(studio: Studio): string {
+  return studio.name.split(/\s+[—–-]\s+/)[0]?.trim() || studio.name;
+}
+
+/** "Late Line" → "LL" */
+export function initials(brand: string): string {
+  return brand
+    .split(/\s+/)
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+}

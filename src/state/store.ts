@@ -6,7 +6,7 @@ import { mockClassifyOne } from "../classify/mock";
 import type { CallMeta, ClassifyOne } from "../classify/types";
 import { planShow, type Plan, type ShotBlock } from "../engine";
 import { talkshow } from "../fixtures/studios";
-import sample from "../fixtures/rundowns/talkshow-01.txt?raw";
+import { SAMPLES } from "../fixtures/samples";
 import type { Row, Studio } from "../model/types";
 import { applyEdit, type Edit } from "./edit";
 
@@ -38,7 +38,9 @@ type State = {
   subtitles: boolean;
 
   setScript: (s: string) => void;
-  loadSample: () => void;
+  /** load a sample rundown and the studio it is written for (the first sample by default) */
+  loadSample: (id?: string) => void;
+  sampleId: string;
   setProvider: (p: ProviderId) => void;
   checkServer: () => Promise<void>;
   parse: () => Promise<void>;
@@ -87,7 +89,15 @@ export const useStore = create<State>()((set, get) => ({
   subtitles: true,
 
   setScript: (script) => set({ script }),
-  loadSample: () => set({ script: sample }),
+  sampleId: SAMPLES[0]?.id ?? "",
+  loadSample: (id) => {
+    const sample = SAMPLES.find((s) => s.id === id) ?? SAMPLES[0];
+    if (!sample) return;
+    const { studio } = get();
+    // a different cast: rows, edits and the plan belong to the old studio
+    const fresh = studio.id === sample.studio.id ? {} : { rows: [], plan: plan(sample.studio, []), time: 0, playing: false, stats: null };
+    set({ script: sample.script, studio: sample.studio, sampleId: sample.id, ...fresh });
+  },
   setProvider: (provider) => set({ provider }),
   checkServer: async () => {
     const health = await serverHealth();

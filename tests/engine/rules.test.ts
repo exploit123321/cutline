@@ -185,3 +185,47 @@ describe("rule 8: reasons", () => {
     for (const r of rows) expect(r.reason, r.text).toBeTruthy();
   });
 });
+
+describe("screen segments", () => {
+  const screenShow = () =>
+    planShow({
+      studio: tiny,
+      rows: [
+        row("dialogue", "a", words(10)),
+        row("visual", null, "article | A headline"),
+        row("dialogue", "b", words(10)),
+        row("action", "a", "Alice laughs"),
+        row("dialogue", "a", words(10)),
+        row("cut", null, "back to wide"),
+        row("dialogue", "b", words(10)),
+      ],
+    });
+
+  it("keeps talk on the screen's shot, so there is no cut while the screen is up", () => {
+    const { rows } = screenShow();
+    const [, visual, talk, , talkAgain] = rows;
+    expect(talk?.cameraId).toBe(visual?.cameraId);
+    expect(talk?.fov).toBe(visual?.fov);
+    expect(talk?.reason).toMatch(/^On screen: article · Bob in the corner box/);
+    expect(talkAgain?.cameraId).toBe(visual?.cameraId);
+  });
+
+  it("merges the screen and the talk on it into one shot block", () => {
+    const plan = screenShow();
+    const visual = plan.rows[1];
+    const block = plan.blocks.find((b) => b.rowIds.includes(visual?.id ?? ""));
+    expect(block?.rowIds).toContain(plan.rows[2]?.id);
+  });
+
+  it("gives an action inside the segment its own reaction shot", () => {
+    const plan = screenShow();
+    const action = plan.rows[3];
+    expect(action?.reason).not.toMatch(/^On screen/);
+    expect(plan.blocks.find((b) => b.rowIds.includes(action?.id ?? ""))?.rowIds).toEqual([action?.id]);
+  });
+
+  it("ends the segment at a cut", () => {
+    const { rows } = screenShow();
+    expect(rows[6]?.reason).not.toMatch(/^On screen/);
+  });
+});

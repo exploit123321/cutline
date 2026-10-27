@@ -8,6 +8,7 @@ import { Timeline } from "../panels/Timeline";
 import { performanceOf } from "../scene/showState";
 import { speakerColour } from "../speakers";
 import { StudioView } from "../StudioView";
+import { SAMPLES } from "../../fixtures/samples";
 
 /**
  * The show, played back: the studio in 3D, the program output, and every camera's own
@@ -207,18 +208,24 @@ function EmptyShow() {
         <p className="mt-2 text-[12.5px] leading-relaxed text-fg-2">
           The show plays the cut plan of a parsed rundown: the studio in 3D, the program output and every camera at once.
         </p>
-        <div className="mt-5 flex justify-center gap-2">
-          <button
-            className="btn btn-primary"
-            disabled={parsing !== null}
-            onClick={async () => {
-              loadSample();
-              await parse();
-            }}
-          >
-            {parsing ? `Classifying ${parsing.done}/${parsing.total}…` : "Load sample and parse"}
-          </button>
-          <button className="btn" onClick={() => setMode("plan")}>
+        <div className="mt-5 flex flex-col gap-2">
+          {SAMPLES.map((s, i) => (
+            <button
+              key={s.id}
+              className={`btn ${i === 0 ? "btn-primary" : ""} !h-auto !justify-start !py-2 text-left`}
+              disabled={parsing !== null}
+              onClick={async () => {
+                loadSample(s.id);
+                await parse();
+              }}
+            >
+              <span className="flex flex-col">
+                <span className="font-semibold">{parsing ? `Classifying ${parsing.done}/${parsing.total}…` : `Play ${s.label}`}</span>
+                <span className="text-[11.5px] font-normal opacity-75">{s.hint}</span>
+              </span>
+            </button>
+          ))}
+          <button className="btn mt-1" onClick={() => setMode("plan")}>
             Open the planner
           </button>
         </div>

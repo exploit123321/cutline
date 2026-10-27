@@ -1,10 +1,11 @@
 import { RoundedBox } from "@react-three/drei";
 import { memo, useEffect, useMemo, type JSX } from "react";
-import { CanvasTexture, SRGBColorSpace } from "three";
+import { CanvasTexture, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace } from "three";
 import { DEG } from "../../../geometry";
 import { wallAt, type WallContent } from "../../../show";
 import { useStore } from "../../../state/store";
 import { useCanvasFont } from "../../fonts";
+import { brandOf } from "../../speakers";
 import { C, cylinder, mat, torus, unitBox } from "./shared";
 
 /*
@@ -74,7 +75,7 @@ function hash(s: string): number {
 }
 
 /** Draws the wall picture: the show logo, or a graphic built from the row text. */
-function drawWall(content: WallContent, family: string): HTMLCanvasElement {
+function drawWall(content: WallContent, family: string, brand: string): HTMLCanvasElement {
   const W = 1024;
   const H = 576;
   const c = document.createElement("canvas");
@@ -104,7 +105,7 @@ function drawWall(content: WallContent, family: string): HTMLCanvasElement {
     g.font = font(104, 700);
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText("EVENING DESK", W / 2, H / 2 - 18);
+    g.fillText(brand.toUpperCase(), W / 2, H / 2 - 18);
     g.fillStyle = "#7c9cff";
     g.fillRect(W / 2 - 150, H / 2 + 52, 300, 6);
     g.fillStyle = "rgba(236,236,242,0.6)";
@@ -150,12 +151,13 @@ function useWallContent(): WallContent {
 export const VideoWall = memo(function VideoWall() {
   const content = useWallContent();
   const family = useCanvasFont();
+  const brand = useStore((s) => brandOf(s.studio));
   const texture = useMemo(() => {
-    const t = new CanvasTexture(drawWall(content, family));
+    const t = new CanvasTexture(drawWall(content, family, brand));
     t.colorSpace = SRGBColorSpace;
     t.anisotropy = 4;
     return t;
-  }, [content, family]);
+  }, [content, family, brand]);
   useEffect(() => () => texture.dispose(), [texture]);
   const frame = mat("#0b0d12", { rough: 0.5, metal: 0.4 });
   return (
@@ -238,3 +240,80 @@ export const DETAILED: Record<string, () => JSX.Element> = {
   tvScreen: () => <VideoWall />,
   backdrop: () => <Backdrop />,
 };
+
+// ---------- The room ----------
+
+/** Room bounds in metres: wide and deep enough that every overview camera stays inside. */
+export const ROOM = { halfWidth: 18, back: -14, front: 22, height: 10 } as const;
+
+let drapeTexture: CanvasTexture | null = null;
+/** Black stage drapes: soft vertical folds, one small texture repeated along every wall. */
+function drapes(): CanvasTexture {
+  if (drapeTexture) return drapeTexture;
+  const c = document.createElement("canvas");
+  c.width = 128;
+  c.height = 4;
+  const g = c.getContext("2d");
+  if (g) {
+    for (let x = 0; x < c.width; x++) {
+      const fold = 0.5 + 0.5 * Math.sin((x / c.width) * Math.PI * 2);
+      const v = Math.round(10 + fold * 16);
+      g.fillStyle = `rgb(${v},${v},${v + 4})`;
+      g.fillRect(x, 0, 1, c.height);
+    }
+  }
+  drapeTexture = new CanvasTexture(c);
+  drapeTexture.wrapS = RepeatWrapping;
+  drapeTexture.colorSpace = SRGBColorSpace;
+  return drapeTexture;
+}
+
+/** A drape material for a wall `len` metres long: one fold every 0.6 m. */
+function drapeWall(len: number): MeshStandardMaterial {
+  const map = drapes().clone();
+  map.repeat.set(len / 0.6, 1);
+  map.needsUpdate = true;
+  return new MeshStandardMaterial({ map, roughness: 1 });
+}
+
+/**
+ * The studio around the set: floor, drape walls and a lighting grid under a dark ceiling,
+ * so no angle looks out into empty space.
+ */
+export const Room = memo(function Room() {
+  const { halfWidth: hw, back, front, height: h } = ROOM;
+  const depth = front - back;
+  const midZ = (front + back) / 2;
+  const walls = useMemo(() => ({ side: drapeWall(depth), end: drapeWall(hw * 2) }), [depth, hw]);
+  const grid = mat("#1c1f26", { rough: 0.6, metal: 0.5 });
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, midZ]} receiveShadow material={mat(C.floor, { rough: 0.85, metal: 0 })}>
+        <planeGeometry args={[hw * 2, depth]} />
+      </mesh>
+      {/* back and front walls face into the room */}
+      <mesh position={[0, h / 2, back]} material={walls.end}>
+        <planeGeometry args={[hw * 2, h]} />
+      </mesh>
+      <mesh position={[0, h / 2, front]} rotation={[0, Math.PI, 0]} material={walls.end}>
+        <planeGeometry args={[hw * 2, h]} />
+      </mesh>
+      <mesh position={[-hw, h / 2, midZ]} rotation={[0, Math.PI / 2, 0]} material={walls.side}>
+        <planeGeometry args={[depth, h]} />
+      </mesh>
+      <mesh position={[hw, h / 2, midZ]} rotation={[0, -Math.PI / 2, 0]} material={walls.side}>
+        <planeGeometry args={[depth, h]} />
+      </mesh>
+      <mesh position={[0, h, midZ]} rotation={[Math.PI / 2, 0, 0]} material={mat("#07080b", { rough: 1 })}>
+        <planeGeometry args={[hw * 2, depth]} />
+      </mesh>
+      {/* lighting grid: pipes every 3 m under the ceiling */}
+      {Array.from({ length: Math.floor((hw * 2) / 3) + 1 }, (_, i) => -hw + i * 3).map((x) => (
+        <mesh key={`x${x}`} geometry={unitBox()} material={grid} position={[x, h - 0.6, midZ]} scale={[0.06, 0.06, depth]} />
+      ))}
+      {Array.from({ length: Math.floor(depth / 3) + 1 }, (_, i) => back + i * 3).map((z) => (
+        <mesh key={`z${z}`} geometry={unitBox()} material={grid} position={[0, h - 0.6, z]} scale={[hw * 2, 0.06, 0.06]} />
+      ))}
+    </group>
+  );
+});

@@ -90,6 +90,12 @@ class Exchange {
   }
 }
 
+/** "article | Night buses carry…" → "article". Plain graphics text is shortened instead. */
+function screenTitle(text: string): string {
+  const head = text.split("|")[0]?.trim() ?? "";
+  return head.length > 28 ? `${head.slice(0, 27)}…` : head || "graphics";
+}
+
 /**
  * The cut engine. Deterministic: plain functions of the show, no randomness, no AI.
  * Returns every row with camera, FOV, timing and a reason, plus the shot blocks the
@@ -102,9 +108,12 @@ export function planShow(show: Show): Plan {
   const decisions: Decision[] = [];
   let prev: { cameraId: string | null; shot: Shot | null } = { cameraId: null, shot: null };
   let clock = 0;
+  // a shared screen on air: talk rides on it until a cut or cue takes the program back
+  let screen: { decision: Decision; title: string } | null = null;
 
   for (const row of show.rows) {
     exchange.enter(row);
+    if (row.type === "cut" || row.type === "cue") screen = null;
     const intent = chooseShot(row, studio);
     const line = exchange.active();
     const duration = row.locked && row.duration !== null ? row.duration : baseDuration(row);
@@ -121,6 +130,11 @@ export function planShow(show: Show): Plan {
       decision = { framing: row.fov !== null ? { ...f, fov: row.fov } : f, shot: intent.shot, subjects: intent.subjects };
       reason = `Locked by user · ${lockedCamera.label}`;
       if (line && !respectsLine(lockedCamera, line)) reason += ` · crosses the ${first(line.a)}–${first(line.b)} line`;
+    } else if (screen && row.type === "dialogue") {
+      // Screen segment: the screen stays on air with the people in the corner, so no cut
+      decision = screen.decision;
+      const speaker = studio.people.find((p) => p.id === row.speakerId);
+      reason = `On screen: ${screen.title} · ${speaker ? first(speaker) : "talk"} in the corner box`;
     } else if (lastDecision && (row.type === "note" || (duration < MIN_HOLD && row.type !== "cut"))) {
       // Rule 7: too short to cut to (or not on air), so it rides on the previous shot
       decision = lastDecision;
@@ -159,6 +173,7 @@ export function planShow(show: Show): Plan {
     }
 
     const cameraId = decision.framing.camera.id;
+    if (row.type === "visual") screen = { decision, title: screenTitle(row.text) };
     exchange.record(row, cameraId);
     if (row.type !== "note") prev = { cameraId, shot: decision.shot };
     decisions.push(decision);

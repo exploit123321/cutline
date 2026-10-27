@@ -172,7 +172,7 @@ describe("wallAt", () => {
     const plan = await samplePlan();
     const gfx = plan.rows.find((r) => r.type === "visual");
     if (!gfx || gfx.start === null) throw new Error("no visual row");
-    expect(wallAt(plan, gfx.start + 0.1)).toEqual({ kind: "gfx", text: gfx.text, fullScreen: true });
+    expect(wallAt(plan, gfx.start + 0.1)).toEqual({ kind: "gfx", text: "Budget chart", fullScreen: true });
     expect(wallAt(plan, 0).kind).toBe("logo");
   });
 });
@@ -260,5 +260,20 @@ describe("name strap timing", () => {
     const [s] = strapWindows(plan, buildPerformance(plan, tiny).firstLines);
     expect(s?.start).toBe(0);
     expect(s?.end).toBeGreaterThanOrEqual(STRAP_MIN);
+  });
+});
+
+describe("written camera moves", () => {
+  it("pushes in over the shot on 'slow push in', and zooms out on 'slow zoom out'", () => {
+    const plan = planShow({
+      studio: tiny,
+      rows: [row("cue", null, "OPEN wide, slow push in"), row("dialogue", "a", words(10)), row("cue", null, "outro, slow zoom out")],
+    });
+    const [open, , outro] = plan.blocks;
+    if (!open || !outro) throw new Error("blocks");
+    const fovAt = (t: number) => camerasAt(plan, tiny, t).states[camerasAt(plan, tiny, t).pgm as string]?.fov ?? NaN;
+    expect(fovAt(open.start + 0.01)).toBeCloseTo(open.fov, 1);
+    expect(fovAt(open.start + open.duration - 0.01)).toBeLessThan(open.fov * 0.8);
+    expect(fovAt(outro.start + outro.duration - 0.01)).toBeGreaterThan(fovAt(outro.start + 0.01));
   });
 });

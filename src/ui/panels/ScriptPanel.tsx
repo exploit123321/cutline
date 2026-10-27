@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SAMPLES } from "../../fixtures/samples";
 import { useStore } from "../../state/store";
 import type { ProviderId } from "../../classify";
 import { RollingNumber } from "../motion/RollingNumber";
@@ -26,9 +27,7 @@ export function ScriptPanel() {
     <section className="flex h-full min-h-0 flex-col gap-3 border-r border-line bg-elev p-4">
       <div className="flex items-center justify-between">
         <h2 className="panel-title">Rundown</h2>
-        <button onClick={loadSample} className="btn btn-sm">
-          Load sample
-        </button>
+        <SampleMenu onPick={loadSample} />
       </div>
 
       <textarea
@@ -81,5 +80,49 @@ export function ScriptPanel() {
         </p>
       )}
     </section>
+  );
+}
+
+/** "Load sample" opens a short menu: each sample rundown with the studio it is written for. */
+function SampleMenu({ onPick }: { onPick: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen((v) => !v)} className="btn btn-sm" aria-expanded={open}>
+        Load sample
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+          <path d="M2 3.5 5 6.5 8 3.5" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          className="fade-up absolute right-0 top-9 z-40 w-64 rounded-xl p-1"
+          style={{ background: "rgba(24,24,31,0.97)", boxShadow: "inset 0 0 0 1px var(--color-line-strong), 0 18px 40px -12px rgba(0,0,0,0.75)", animationDuration: "260ms" }}
+        >
+          {SAMPLES.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => {
+                setOpen(false);
+                onPick(s.id);
+              }}
+              className="block w-full rounded-md px-2.5 py-2 text-left transition-colors hover:bg-surface-2"
+            >
+              <div className="text-[13px] font-semibold text-fg">{s.label}</div>
+              <div className="text-[11.5px] leading-snug text-fg-3">{s.hint}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
