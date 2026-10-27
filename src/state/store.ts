@@ -11,6 +11,7 @@ import type { Row, Studio } from "../model/types";
 import { applyEdit, type Edit } from "./edit";
 
 export type Drag = { kind: "person" | "camera"; id: string } | null;
+export type Mode = "plan" | "show";
 
 type State = {
   studio: Studio;
@@ -30,6 +31,9 @@ type State = {
   time: number;
   playing: boolean;
   drag: Drag;
+  /** plan: script, sheet and preview; show: the full-screen show with every camera live */
+  mode: Mode;
+  speed: number;
 
   setScript: (s: string) => void;
   loadSample: () => void;
@@ -41,6 +45,10 @@ type State = {
   setTime: (t: number) => void;
   setPlaying: (p: boolean) => void;
   setDrag: (d: Drag) => void;
+  setMode: (m: Mode) => void;
+  setSpeed: (s: number) => void;
+  /** jump to the start of the next (+1) or previous (-1) shot */
+  stepShot: (dir: 1 | -1) => void;
   move: (kind: "person" | "camera", id: string, x: number, z: number) => void;
 };
 
@@ -71,6 +79,8 @@ export const useStore = create<State>()((set, get) => ({
   time: 0,
   playing: false,
   drag: null,
+  mode: "plan",
+  speed: 1,
 
   setScript: (script) => set({ script }),
   loadSample: () => set({ script: sample }),
@@ -128,6 +138,17 @@ export const useStore = create<State>()((set, get) => ({
     set({ playing, time: playing && time >= end ? 0 : time });
   },
   setDrag: (drag) => set({ drag }),
+  setMode: (mode) => set({ mode }),
+  setSpeed: (speed) => set({ speed }),
+  stepShot: (dir) => {
+    const { plan: p, time } = get();
+    if (!p.blocks.length) return;
+    const starts = p.blocks.map((b) => b.start);
+    // a small margin, so "previous" from just after a cut goes to the shot before it
+    const target =
+      dir > 0 ? starts.find((s) => s > time + 1e-6) : [...starts].reverse().find((s) => s < time - 0.25);
+    set({ time: target ?? (dir > 0 ? totalDuration(p) : 0) });
+  },
 
   move: (kind, id, x, z) => {
     const { studio, rows } = get();

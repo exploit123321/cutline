@@ -45,7 +45,8 @@ function SheetRow({ row, studio, active, engineShot, onEdit, onSeek }: {
   return (
     <tr
       ref={ref}
-      className={`border-b border-ink-800 align-top ${active ? "bg-tally-soft" : "hover:bg-ink-850"}`}
+      className={`row-enter border-b border-line align-top transition-colors ${active ? "bg-tally-soft" : "hover:bg-surface"}`}
+      style={{ ["--i" as string]: Math.min(row.index, 24) }}
       title={`${conf}\nraw: ${row.raw}`}
     >
       <td className={`relative py-1.5 pl-3 pr-2 font-mono text-ink-400 ${active ? "text-ink-100" : ""}`}>
@@ -147,8 +148,8 @@ export function SheetPanel() {
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-ink-900">
-      <div className="flex items-center gap-4 border-b border-ink-700 px-4 py-2">
+    <section className="flex h-full min-h-0 flex-col bg-bg">
+      <div className="flex items-center gap-4 border-b border-line px-4 py-2">
         <h2 className="panel-title">Shot list</h2>
         <div className="flex items-center gap-3 text-[11px] text-ink-400">
           <span className="flex items-center gap-1.5">
@@ -164,11 +165,7 @@ export function SheetPanel() {
             <input type="checkbox" checked={reviewOnly} onChange={(e) => setReviewOnly(e.target.checked)} className="accent-review" />
             Needs review only ({review})
           </label>
-          <button
-            onClick={download}
-            disabled={!plan.rows.length}
-            className="rounded border border-ink-600 px-2 py-1 text-xs text-ink-300 hover:text-ink-100 disabled:opacity-40"
-          >
+          <button onClick={download} disabled={!plan.rows.length} className="btn btn-sm">
             Export CSV
           </button>
         </div>
@@ -191,8 +188,8 @@ export function SheetPanel() {
               <col className="w-14" />
               <col className="w-[30%]" />
             </colgroup>
-            <thead className="sticky top-0 z-10 bg-ink-900 text-left text-[10px] uppercase tracking-wider text-ink-500">
-              <tr className="border-b border-ink-700">
+            <thead className="sticky top-0 z-10 bg-bg text-left text-[10px] uppercase tracking-[0.08em] text-fg-3">
+              <tr className="border-b border-line">
                 <th className="py-2 pl-3 font-semibold">#</th>
                 <th className="px-2 font-semibold">Type</th>
                 <th className="px-2 font-semibold">Speaker</th>

@@ -66,6 +66,7 @@ src/
   geometry/     pure math: vectors, angles, visibility, framing, line side
   models/       preset adapter (5 cm units → metres) and the ported presets
   engine/       cut engine: scoring, rules, timeline
+  show/         show state at time t: camera moves, tally, gaze, acts (pure, tested)
   classify/     classifier interface, providers, segmenter, validation
   state/        zustand store
   ui/           panels: Script, Sheet, Studio, Monitor, Timeline
@@ -252,6 +253,13 @@ Visual style: dark, calm, broadcast-control-room feel. One accent colour for the
 - Drag to move people and cameras in the 3D view, re-running the engine live.
 - README with a GIF, how to run, the design rule, and a link to `docs/bug-log.md`.
 - ✅ A reviewer can `npm install && npm run dev`, press "Load sample", "Parse" and "Play", and see a cut sequence with no API key.
+
+### Stage 6 — Show
+- A **Show** mode next to **Plan**: the 3D studio, the program output, a multiview with every camera's own picture, Now/Next, and the transport, all on one playhead.
+- Off-air operated cameras pan to their next shot before the cut. People turn to the speaker, and "laughs", "nods" and "turns to X" play out. The video wall follows visual rows. All of this comes from pure functions in `src/show/` with tests. It never changes the engine's decisions.
+- Three.js models for people (jointed, seated or standing), cameras (pedestal or tripod, pan/tilt, tally) and the set. The part-list presets remain as the fallback.
+- UI in the Peek & Grep design system (tokens, pill switch, rolling digits, motion).
+- ✅ Scrubbing to the same time gives the same picture; a fixed camera never moves; an off-air camera is framed on its next shot before the cut.
 
 ## Sample rundown (put in `src/fixtures/rundowns/talkshow-01.txt`)
 

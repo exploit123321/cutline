@@ -50,6 +50,15 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 - `speaker` keeps the spec's `"none"` option. The docs suggest a separate noul for "none of the above". The live probe got "none" right on cues and graphics, so the noul was not necessary.
 - All wording is in `server/jev-questions.ts`. The first eval run got 37 of 37 correct, so no wording was tuned to the fixtures.
 
+## Show and models (2026-10-27)
+- **One clock.** Playback lives in `usePlayback`, mounted once in `App`, so Plan and Show share the playhead. Everything that moves reads it: `src/show/` turns `(plan, studio, t)` into camera aims, tally states, gaze, acts and the wall picture. No state carries from frame to frame, so a scrub and a playthrough land on the same picture.
+- **Camera moves off air only.** An operated camera holds its last shot after it leaves program, pans to its next shot over `MOVE_TIME` (1.6 s), and settles `SETTLE_TIME` (0.25 s) before the cut. Two blocks in a row on one camera reframe on air over 0.6 s. The engine's aims and FOVs are the end points, so the animation never changes a decision.
+- **Gaze rules.** A speaker looks at a cast member named in the line, else at the other half of the current exchange, else at the live camera. A listener looks at the speaker, else at the last speaker. "X turns to Y" holds until X speaks again. A head turns over 0.45 s. The neck takes 70% of the turn and the torso 30%, limited to ±80°.
+- **Models are three.js, not part lists.** The part-list format cannot express joints, so people and cameras are React components with hinged groups. The part-list presets and their adapter stay for anything without a detailed model (`DETAILED` in `SetPieces.tsx` maps preset ids). Geometry and materials are module-level singletons, because each drei `<View>` mounts its own copy of the scene.
+- **One environment map.** A per-view `<Environment>` prefiltered the same cube five times on the first frame. One `RoomEnvironment` map is now built per renderer and shared, with no download.
+- **Shadows only in the big views.** Each view renders its own shadow map, so the overview and program cast shadows and the multiview tiles do not. Measured 66 fps in Show at 1252 px wide with all five views running.
+- **Design system.** Tokens, button styles, motion keyframes, `SegmentedControl` and `RollingNumber` are ported from the author's Peek & Grep (MIT). Broadcast colours sit on top: tally red for program, green for preview. The blue accent marks interaction and the person talking.
+
 ## Dependencies beyond the stack list
 - `@typesafe-ai/sdk`: the official Jev client (the spec asks for it if it exists).
 - `@anthropic-ai/sdk`: the official client for the llm comparison provider.

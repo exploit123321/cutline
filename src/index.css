@@ -1,25 +1,61 @@
 @import "tailwindcss";
 
+/*
+ * Design system ported from Peek & Grep (same author, MIT): calm dark neutrals, one blue
+ * accent for interaction, hairline inset borders, Segoe UI Variable, springy motion.
+ * Broadcast colours sit on top: tally red for on air, green for preview.
+ */
 @theme {
-  --color-ink-950: #0a0c10;
-  --color-ink-900: #0f1217;
-  --color-ink-850: #13171d;
-  --color-ink-800: #181d24;
-  --color-ink-700: #232a33;
-  --color-ink-600: #313a45;
-  --color-ink-500: #4a5562;
-  --color-ink-400: #6b7785;
-  --color-ink-300: #93a0ae;
-  --color-ink-200: #bcc6d0;
-  --color-ink-100: #e2e7ec;
-  --color-tally: #ff3b30;
-  --color-tally-soft: #ff3b3022;
-  --color-review: #e5b400;
-  --color-review-soft: #e5b40026;
-  --color-invalid: #ff5a5f;
-  --color-invalid-soft: #ff5a5f2b;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-bg: #0b0b0e;
+  --color-elev: #0f0f13;
+  --color-surface: #15151b;
+  --color-surface-2: #1b1b23;
+  --color-surface-3: #22222c;
+  --color-line: rgba(255, 255, 255, 0.065);
+  --color-line-strong: rgba(255, 255, 255, 0.11);
+  --color-fg: #ececf2;
+  --color-fg-2: #a3a3b2;
+  --color-fg-3: #6b6b7b;
+  --color-accent: #7c9cff;
+  --color-accent-strong: #5b7cfa;
+  --color-accent-soft: rgba(124, 156, 255, 0.13);
+  --color-accent-line: rgba(124, 156, 255, 0.38);
+  --color-ok: #3ecf8e;
+  --color-warn: #f2b84b;
+  --color-danger: #f0616d;
+
+  /* broadcast */
+  --color-tally: #ff453a;
+  --color-tally-soft: rgba(255, 69, 58, 0.13);
+  --color-pvw: #30d158;
+  --color-pvw-soft: rgba(48, 209, 88, 0.13);
+
+  /* review states in the sheet */
+  --color-review: #f2b84b;
+  --color-review-soft: rgba(242, 184, 75, 0.14);
+  --color-invalid: #f0616d;
+  --color-invalid-soft: rgba(240, 97, 109, 0.15);
+
+  /* the earlier ink scale, mapped onto the same neutrals */
+  --color-ink-950: #0b0b0e;
+  --color-ink-900: #0f0f13;
+  --color-ink-850: #131318;
+  --color-ink-800: #17171e;
+  --color-ink-700: #202029;
+  --color-ink-600: #2c2c38;
+  --color-ink-500: #4b4b5a;
+  --color-ink-400: #6b6b7b;
+  --color-ink-300: #8d8d9d;
+  --color-ink-200: #a3a3b2;
+  --color-ink-100: #ececf2;
+
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 html,
@@ -29,17 +65,256 @@ body,
 }
 
 body {
-  background: var(--color-ink-950);
-  color: var(--color-ink-100);
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
   font-family: var(--font-sans);
+  font-size: 13px;
   -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2e2e3a transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-line);
+  outline-offset: 2px;
+}
+
+/* ---------- Components ---------- */
+
+.panel {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-line);
 }
 
 /* panels share one heading style: small caps, like labels on a vision mixer */
-.panel-title {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-ink-400);
+.panel-title,
+.label-caps {
+  font-size: 10.5px;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-fg-2);
+  background: var(--color-surface-2);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+  transition: background 150ms, color 150ms, box-shadow 150ms, transform 150ms var(--ease-spring);
+}
+.btn:hover {
+  color: var(--color-fg);
+  background: var(--color-surface-3);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.btn-sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.btn-primary {
+  color: white;
+  background: linear-gradient(180deg, #7f9dff, #5b7cfa);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 6px 18px -8px rgba(91, 124, 250, 0.8);
+}
+.btn-primary:hover {
+  color: white;
+  background: linear-gradient(180deg, #8ea9ff, #6886fb);
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--color-fg-2);
+  transition: background 150ms, color 150ms, transform 150ms var(--ease-spring);
+}
+.icon-btn:hover {
+  color: var(--color-fg);
+  background: var(--color-surface-2);
+}
+.icon-btn:active {
+  transform: scale(0.94);
+}
+.icon-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  border-radius: 8px;
+  color: var(--color-fg);
+  background: var(--color-elev);
+  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  outline: none;
+  transition: box-shadow 150ms;
+}
+.input:focus {
+  box-shadow: inset 0 0 0 1px var(--color-accent-line), 0 0 0 3px var(--color-accent-soft);
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--color-fg-2);
+  background: var(--color-surface-2);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 1px var(--color-line-strong);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  color: var(--color-fg-2);
+  background: var(--color-elev);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+
+/* numbers: the UI font with even-width digits */
+.num {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---------- Motion (Peek & Grep motion references) ---------- */
+
+/* new rows rise and sharpen in sequence (X04, R03 Blur Reveal) */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.row-enter {
+  animation: row-in 360ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 22ms);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.fade-up {
+  animation: fade-up 520ms var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* name strap wipes in from the left */
+@keyframes strap-in {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+.strap-in {
+  animation: strap-in 480ms var(--ease-out) both;
+}
+
+@keyframes live-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.live-dot {
+  animation: live-dot 1.8s ease-in-out infinite;
+}
+
+/* the cut: a short flash on the tile that just went to air */
+@keyframes cut-flash {
+  from {
+    box-shadow: inset 0 0 0 2px var(--color-tally), 0 0 0 6px rgba(255, 69, 58, 0.45);
+  }
+  to {
+    box-shadow: inset 0 0 0 2px var(--color-tally), 0 0 0 0 rgba(255, 69, 58, 0);
+  }
+}
+.cut-flash {
+  animation: cut-flash 520ms var(--ease-out);
+}
+
+/* rolling digits (R29 Countdown) */
+.roll-digit {
+  display: inline-block;
+  height: 1.2em;
+  overflow: hidden;
+  vertical-align: top;
+  line-height: 1.2em;
+}
+.roll-strip {
+  display: flex;
+  flex-direction: column;
+  transition: transform 560ms var(--ease-out);
+}
+.roll-strip > span {
+  height: 1.2em;
+  line-height: 1.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
 }

@@ -1,0 +1,278 @@
+import { firstMention } from "../classify/text";
+import type { Plan, ShotBlock } from "../engine";
+import { aimAt, centroid, headPosition, lookAngles, type Aim } from "../geometry";
+import type { Person, Row, Studio, Vec3 } from "../model/types";
+
+/*
+ * What the show looks like at time t: where each camera points, which one is on air,
+ * who talks and where everyone looks. Pure functions of (plan, studio, t), so scrubbing
+ * back and forth always gives the same picture. Visual only: the engine has already
+ * decided every cut, and nothing here changes it.
+ */
+
+/** An operated camera off air pans to its next shot over this many seconds… */
+export const MOVE_TIME = 1.6;
+/** …and is framed this long before the cut, so the cut lands on a still picture. */
+export const SETTLE_TIME = 0.25;
+/** Consecutive blocks on one camera: the operator reframes on air over this time. */
+export const REFRAME_TIME = 0.6;
+/** A head turns to a new target over this time. */
+export const GAZE_TIME = 0.45;
+
+export const smooth = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
+
+/** Interpolate angles in degrees along the shorter way round. */
+export function lerpAngle(a: number, b: number, p: number): number {
+  const d = ((((b - a) % 360) + 540) % 360) - 180;
+  return a + d * p;
+}
+
+const lerpAim = (a: Aim, b: Aim, p: number): Aim => ({ yaw: lerpAngle(a.yaw, b.yaw, p), pitch: lerp(a.pitch, b.pitch, p) });
+
+export function blockIndexAt(plan: Plan, t: number): number {
+  const { blocks } = plan;
+  if (!blocks.length) return -1;
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i] as ShotBlock;
+    if (t >= b.start && t < b.start + b.duration) return i;
+  }
+  return t < (blocks[0] as ShotBlock).start ? 0 : blocks.length - 1;
+}
+
+// ---------- Cameras ----------
+
+export type CamStatus = "pgm" | "pvw" | "idle";
+export type CamState = {
+  status: CamStatus;
+  aim: Aim;
+  fov: number;
+  /** seconds on air in the current run of shots, null when off air */
+  onAir: number | null;
+  /** 0 while still, up to 1 while the operator pans or zooms */
+  moving: number;
+};
+
+/** Where an idle operated camera rests: on the middle of the set. */
+function restAim(studio: Studio, cameraId: string): Aim {
+  const cam = studio.cameras.find((c) => c.id === cameraId);
+  if (!cam) return { yaw: 0, pitch: 0 };
+  return aimAt(cam, centroid(studio.people.map(headPosition)));
+}
+
+export type ShowCameras = {
+  states: Record<string, CamState>;
+  pgm: string | null;
+  pvw: string | null;
+  block: ShotBlock | null;
+  next: ShotBlock | null;
+};
+
+export function camerasAt(plan: Plan, studio: Studio, t: number): ShowCameras {
+  const { blocks } = plan;
+  const cur = blockIndexAt(plan, t);
+  const block = cur >= 0 ? (blocks[cur] as ShotBlock) : null;
+  const nextIdx = block ? blocks.findIndex((b, i) => i > cur && b.cameraId !== block.cameraId) : -1;
+  const next = nextIdx >= 0 ? (blocks[nextIdx] as ShotBlock) : null;
+  const states: Record<string, CamState> = {};
+
+  for (const cam of studio.cameras) {
+    const rest = { aim: restAim(studio, cam.id), fov: (cam.fovRange[0] + cam.fovRange[1]) / 2 };
+    if (!block) {
+      states[cam.id] = { status: "idle", ...rest, onAir: null, moving: 0 };
+      continue;
+    }
+    if (block.cameraId === cam.id) {
+      const prev = blocks[cur - 1];
+      const reframe = prev && prev.cameraId === cam.id ? smooth((t - block.start) / REFRAME_TIME) : 1;
+      let runStart = block.start;
+      for (let i = cur - 1; i >= 0 && blocks[i]?.cameraId === cam.id; i--) runStart = (blocks[i] as ShotBlock).start;
+      states[cam.id] = {
+        status: "pgm",
+        aim: prev && reframe < 1 ? lerpAim(prev.aim, block.aim, reframe) : block.aim,
+        fov: prev && reframe < 1 ? lerp(prev.fov, block.fov, reframe) : block.fov,
+        onAir: Math.max(0, t - runStart),
+        moving: reframe < 1 ? 1 : 0,
+      };
+      continue;
+    }
+    // off air: hold the last shot, then move to the next one before it is cut to
+    let prevIdx = -1;
+    for (let i = cur; i >= 0; i--) if (blocks[i]?.cameraId === cam.id) { prevIdx = i; break; }
+    const ownNext = blocks.findIndex((b, i) => i > cur && b.cameraId === cam.id);
+    const from = prevIdx >= 0 ? (blocks[prevIdx] as ShotBlock) : rest;
+    const offAir = prevIdx >= 0 ? (blocks[prevIdx] as ShotBlock).start + (blocks[prevIdx] as ShotBlock).duration : 0;
+    let aim = from.aim;
+    let fov = from.fov;
+    let moving = 0;
+    if (ownNext >= 0) {
+      const to = blocks[ownNext] as ShotBlock;
+      const w1 = to.start - SETTLE_TIME;
+      const w0 = Math.max(offAir, w1 - MOVE_TIME);
+      const p = w1 <= w0 ? (t >= w0 ? 1 : 0) : smooth((t - w0) / (w1 - w0));
+      aim = lerpAim(from.aim, to.aim, p);
+      fov = lerp(from.fov, to.fov, p);
+      moving = p > 0 && p < 1 ? 1 : 0;
+    }
+    states[cam.id] = { status: next?.cameraId === cam.id ? "pvw" : "idle", aim, fov, onAir: null, moving };
+  }
+  return { states, pgm: block?.cameraId ?? null, pvw: next?.cameraId ?? null, block, next };
+}
+
+// ---------- People ----------
+
+export type Act = "laugh" | "nod" | null;
+
+/** One on-air row, seen from one person. */
+type Beat = {
+  start: number;
+  end: number;
+  talking: boolean;
+  /** a person id, "camera", or null for their default facing */
+  lookAt: string | null;
+  target: Vec3 | null;
+  act: Act;
+};
+
+export type Performance = {
+  beats: Record<string, Beat[]>;
+  /** the last two distinct speakers, from the moment the second one starts */
+  exchanges: { start: number; pair: [string, string] }[];
+  /** each person's first line, for the name strap */
+  firstLines: Record<string, { start: number; end: number }>;
+};
+
+const onAir = (r: Row) => r.start !== null && r.duration !== null && r.duration > 0;
+
+function actOf(text: string): Act {
+  if (/\blaugh/i.test(text)) return "laugh";
+  if (/\bnod/i.test(text)) return "nod";
+  return null;
+}
+
+/** "Anna turns to Mārtiņš" → martins. Looks only after "turns to", so the subject is not matched. */
+function turnTarget(text: string, studio: Studio, self: string): string | null {
+  const m = /\bturns?\s+(?:to|towards)\b(.*)$/i.exec(text);
+  if (!m) return null;
+  const who = firstMention(m[1] ?? "", studio);
+  return who && who.id !== self ? who.id : null;
+}
+
+/** Build the performance once per plan; `peopleAt` then reads it at any t. */
+export function buildPerformance(plan: Plan, studio: Studio): Performance {
+  const beats: Record<string, Beat[]> = Object.fromEntries(studio.people.map((p) => [p.id, []]));
+  const exchanges: Performance["exchanges"] = [];
+  const firstLines: Performance["firstLines"] = {};
+  const heads = new Map(studio.people.map((p) => [p.id, headPosition(p)]));
+  const turned = new Map<string, string>();
+  let speakers: string[] = [];
+
+  for (const r of plan.rows.filter(onAir)) {
+    const start = r.start as number;
+    const end = start + (r.duration as number);
+    const speaker = r.type === "dialogue" && r.speakerId && heads.has(r.speakerId) ? r.speakerId : null;
+    if (speaker) {
+      turned.delete(speaker);
+      if (speakers.at(-1) !== speaker) {
+        speakers = [...speakers.filter((s) => s !== speaker), speaker].slice(-2);
+        if (speakers.length === 2) exchanges.push({ start, pair: [speakers[0] as string, speaker] });
+      }
+      firstLines[speaker] ??= { start, end };
+    }
+    if (r.speakerId && heads.has(r.speakerId)) {
+      const to = turnTarget(r.text, studio, r.speakerId);
+      if (to) turned.set(r.speakerId, to);
+    }
+    const lastSpeaker = speakers.at(-1) ?? null;
+    const block = plan.blocks.find((b) => start >= b.start && start < b.start + b.duration);
+    const liveCam = studio.cameras.find((c) => c.id === block?.cameraId);
+
+    for (const p of studio.people) {
+      const talking = speaker === p.id;
+      let lookAt: string | null = null;
+      if (talking) {
+        const named = firstMention(r.text, studio);
+        const partner = speakers.find((s) => s !== p.id);
+        lookAt = named && named.id !== p.id ? named.id : partner ?? "camera";
+      } else if (turned.has(p.id)) {
+        lookAt = turned.get(p.id) as string;
+      } else if (speaker) {
+        lookAt = speaker;
+      } else if (lastSpeaker && lastSpeaker !== p.id) {
+        lookAt = lastSpeaker;
+      } else if (lastSpeaker === p.id) {
+        lookAt = speakers.find((s) => s !== p.id) ?? null;
+      }
+      const target = lookAt === "camera" ? (liveCam?.position ?? null) : lookAt ? (heads.get(lookAt) ?? null) : null;
+      const act = r.speakerId === p.id ? actOf(r.text) : null;
+      (beats[p.id] as Beat[]).push({ start, end, talking, lookAt, target, act });
+    }
+  }
+  return { beats, exchanges, firstLines };
+}
+
+export type PersonState = {
+  talking: boolean;
+  lookAt: string | null;
+  /** world yaw and pitch of the gaze, in degrees */
+  gaze: Aim;
+  act: Act;
+  /** 0..1 through the current beat */
+  phase: number;
+};
+
+function gazeOf(head: Vec3, facingYaw: number, target: Vec3 | null): Aim {
+  return target ? lookAngles(head, target) : { yaw: facingYaw, pitch: 0 };
+}
+
+export function personAt(perf: Performance, p: Person, t: number): PersonState {
+  const list = perf.beats[p.id] ?? [];
+  const head = headPosition(p);
+  let i = -1;
+  for (let k = 0; k < list.length; k++) if ((list[k] as Beat).start <= t) i = k;
+  const beat = list[i];
+  if (!beat) return { talking: false, lookAt: null, gaze: gazeOf(head, p.facingYaw, null), act: null, phase: 0 };
+  const prev = list[i - 1];
+  const now = gazeOf(head, p.facingYaw, beat.target);
+  const before = prev ? gazeOf(head, p.facingYaw, prev.target) : now;
+  const g = smooth((t - beat.start) / GAZE_TIME);
+  const inBeat = t < beat.end;
+  return {
+    talking: beat.talking && inBeat,
+    lookAt: beat.lookAt,
+    gaze: lerpAim(before, now, g),
+    act: inBeat ? beat.act : null,
+    phase: Math.min(1, Math.max(0, (t - beat.start) / Math.max(beat.end - beat.start, 1e-6))),
+  };
+}
+
+export function peopleAt(perf: Performance, studio: Studio, t: number): Record<string, PersonState> {
+  return Object.fromEntries(studio.people.map((p) => [p.id, personAt(perf, p, t)]));
+}
+
+/** The two people whose 180° line is active at t, if any. */
+export function exchangeAt(perf: Performance, t: number): [string, string] | null {
+  let pair: [string, string] | null = null;
+  for (const e of perf.exchanges) if (e.start <= t) pair = e.pair;
+  return pair;
+}
+
+/** Name strap for a person's first line on air, for its first few seconds. */
+export const STRAP_TIME = 3.5;
+export function strapAt(perf: Performance, t: number): string | null {
+  for (const [id, line] of Object.entries(perf.firstLines)) {
+    if (t >= line.start && t < Math.min(line.end, line.start + STRAP_TIME)) return id;
+  }
+  return null;
+}
+
+// ---------- Screens ----------
+
+export type WallContent = { kind: "logo" } | { kind: "gfx"; text: string; fullScreen: boolean };
+
+/** What the set's video wall (and, for full-screen graphics, the program output) shows. */
+export function wallAt(plan: Plan, t: number): WallContent {
+  const r = plan.rows.find((x) => onAir(x) && t >= (x.start as number) && t < (x.start as number) + (x.duration as number));
+  if (r?.type === "visual") return { kind: "gfx", text: r.text, fullScreen: /full[\s-]?screen|\bfs\b/i.test(r.text) };
+  return { kind: "logo" };
+}
