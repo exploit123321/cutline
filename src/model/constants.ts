@@ -18,3 +18,9 @@ export const MAX_FRONTALITY = 60;
 
 /** Context window for the classify loop: how many previous rows each call sees. */
 export const CLASSIFY_CONTEXT = 5;
+
+/** Above this, Jev's `unknown_speaker` answer clears the speaker and flags it red. */
+export const UNKNOWN_SPEAKER_THRESHOLD = 0.5;
+
+/** Jev bills input tokens only: $0.042 per million (docs.typesafe.ai/models, 2026-10). */
+export const JEV_USD_PER_MTOK = 0.042;

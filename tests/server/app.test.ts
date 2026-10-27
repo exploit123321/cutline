@@ -14,33 +14,59 @@ const good: LlmOutput = {
   confidence: { type: 0.9, speakerId: 0.9, shot: 0.9 },
 };
 const body = { segment: "ANNA: hi", context: [], studio: talkshow };
-const post = (app: ReturnType<typeof createApp>, b: unknown) =>
-  app.request("/api/classify", { method: "POST", body: JSON.stringify(b), headers: { "content-type": "application/json" } });
+const post = (app: ReturnType<typeof createApp>, b: unknown, provider = "llm") =>
+  app.request(`/api/classify/${provider}`, {
+    method: "POST",
+    body: JSON.stringify(b),
+    headers: { "content-type": "application/json" },
+  });
 
 describe("classifier server", () => {
-  it("reports whether a key is configured", async () => {
-    const res = await createApp({ hasKey: () => false }).request("/api/health");
-    expect(await res.json()).toMatchObject({ ok: true, llm: false });
+  it("reports which providers have a key", async () => {
+    const res = await createApp({ jev: { hasKey: () => true }, llm: { hasKey: () => false } }).request("/api/health");
+    expect(await res.json()).toMatchObject({ ok: true, jev: true, llm: false });
   });
 
   it("returns 503 without a key instead of calling the API", async () => {
     let called = false;
-    const app = createApp({ hasKey: () => false, classify: async () => ((called = true), good) });
-    expect((await post(app, body)).status).toBe(503);
+    const app = createApp({ llm: { hasKey: () => false, classify: async () => ((called = true), good) } });
+    const res = await post(app, body);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: expect.stringContaining("ANTHROPIC_API_KEY") });
     expect(called).toBe(false);
   });
 
+  it("names the TypeSafe key when jev has none", async () => {
+    const res = await post(createApp({ jev: { hasKey: () => false } }), body, "jev");
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: expect.stringContaining("TYPESAFE_API_KEY") });
+  });
+
+  it("returns 404 for an unknown provider", async () => {
+    expect((await post(createApp(), body, "gpt")).status).toBe(404);
+  });
+
   it("rejects malformed requests with 400", async () => {
-    const app = createApp({ hasKey: () => true, classify: async () => good });
+    const app = createApp({ llm: { hasKey: () => true, classify: async () => good } });
     expect((await post(app, { segment: "" })).status).toBe(400);
   });
 
-  it("returns the classification and maps provider errors to 502", async () => {
-    expect(await (await post(createApp({ hasKey: () => true, classify: async () => good }), body)).json()).toEqual(good);
+  it("routes each provider to its own classifier", async () => {
+    const app = createApp({
+      jev: { hasKey: () => true, classify: async () => ({ ...good, text: "from jev" }) },
+      llm: { hasKey: () => true, classify: async () => good },
+    });
+    expect(await (await post(app, body, "jev")).json()).toMatchObject({ text: "from jev" });
+    expect(await (await post(app, body, "llm")).json()).toEqual(good);
+  });
+
+  it("maps provider errors to 502", async () => {
     const failing = createApp({
-      hasKey: () => true,
-      classify: async () => {
-        throw new ClassifyError("nope");
+      llm: {
+        hasKey: () => true,
+        classify: async () => {
+          throw new ClassifyError("nope");
+        },
       },
     });
     const res = await post(failing, body);

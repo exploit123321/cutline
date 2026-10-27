@@ -1,4 +1,5 @@
 import type { RowType, Studio } from "../model/types";
+import { PREFIX } from "./extract";
 import { explicitShot, firstMention, norm, resolveSpeaker, slug } from "./text";
 import type { ClassifyOne, ContextRow, RawClassification } from "./types";
 
@@ -12,7 +13,6 @@ const TAGS: [RegExp, RowType][] = [
 const CUT_START = /^((cut|back|go|over|switch)\s+to\b|(close|tight|wide|medium|two[- ]shot)\s+on\b|cam(era)?\s*\d|push in|pull (out|back))/;
 const CUE_START = /^(open|opening|close show|closing|music|sfx|stinger|bumper|roll|break|titles|applause|lights)\b/;
 const CONTINUES = /^(she|he|they)\s+(continues|goes on|adds|carries on)\b[:,]?\s*/;
-const PREFIX = /^([\p{L}][\p{L}.'’]*(?:\s[\p{L}][\p{L}.'’]*){0,2})\s*(?::|\s[-—–]\s)\s*(.*)$/u;
 
 function tagType(tag: string): RowType | null {
   const t = norm(tag);

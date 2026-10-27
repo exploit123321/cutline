@@ -3,19 +3,22 @@ import { useStore } from "../../state/store";
 import type { ProviderId } from "../../classify";
 
 const PROVIDERS: { id: ProviderId; label: string; hint: string }[] = [
+  { id: "jev", label: "Jev", hint: "TypeSafe, calibrated" },
   { id: "mock", label: "Mock", hint: "rules, offline" },
-  { id: "llm", label: "LLM", hint: "Claude via local server" },
+  { id: "llm", label: "LLM", hint: "Claude, comparison" },
 ];
 
+const KEY_NAME = { jev: "TYPESAFE_API_KEY", llm: "ANTHROPIC_API_KEY" } as const;
+
 export function ScriptPanel() {
-  const { script, setScript, loadSample, provider, setProvider, parse, parsing, error, llmReady, checkLlm, rows } = useStore();
+  const { script, setScript, loadSample, provider, setProvider, parse, parsing, error, health, checkServer, rows } = useStore();
 
   useEffect(() => {
-    void checkLlm();
-  }, [checkLlm]);
+    void checkServer();
+  }, [checkServer]);
 
   const review = rows.filter((r) => r.needsReview).length;
-  const llmBlocked = provider === "llm" && llmReady === false;
+  const blocked = provider !== "mock" && health !== null && !health[provider];
 
   return (
     <section className="flex h-full min-h-0 flex-col gap-3 border-r border-ink-700 bg-ink-900 p-4">
@@ -39,7 +42,7 @@ export function ScriptPanel() {
 
       <div>
         <div className="panel-title mb-1.5">Classifier</div>
-        <div className="grid grid-cols-2 gap-1 rounded border border-ink-700 bg-ink-950 p-1">
+        <div className="grid grid-cols-3 gap-1 rounded border border-ink-700 bg-ink-950 p-1">
           {PROVIDERS.map((p) => (
             <button
               key={p.id}
@@ -53,11 +56,11 @@ export function ScriptPanel() {
             </button>
           ))}
         </div>
-        {llmBlocked && (
+        {blocked && (
           <p className="mt-2 text-[11px] leading-snug text-review">
-            LLM server not reachable or no key. Run <code className="font-mono">npm run server</code> with{" "}
-            <code className="font-mono">ANTHROPIC_API_KEY</code> in <code className="font-mono">.env</code>.{" "}
-            <button className="underline" onClick={() => void checkLlm()}>
+            Classifier server not reachable or no key. Run <code className="font-mono">npm run server</code> with{" "}
+            <code className="font-mono">{KEY_NAME[provider]}</code> in <code className="font-mono">.env</code>.{" "}
+            <button className="underline" onClick={() => void checkServer()}>
               Retry
             </button>
           </p>
@@ -66,7 +69,7 @@ export function ScriptPanel() {
 
       <button
         onClick={() => void parse()}
-        disabled={!script.trim() || parsing !== null || llmBlocked}
+        disabled={!script.trim() || parsing !== null || blocked}
         className="rounded bg-ink-100 py-2 text-sm font-semibold text-ink-950 transition-opacity hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
       >
         {parsing ? `Classifying ${parsing.done}/${parsing.total}…` : "Parse"}

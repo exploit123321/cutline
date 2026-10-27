@@ -1,7 +1,7 @@
 import { REVIEW_THRESHOLD } from "../model/constants";
 import { ROW_TYPES, SHOTS } from "../model/schema";
 import type { ConfidenceField, Row, RowType, Shot, Studio } from "../model/types";
-import type { RawClassification } from "./types";
+import { CONFIDENCE_FIELDS, type RawClassification } from "./types";
 
 type Classified = Pick<Row, "type" | "speakerId" | "text" | "shot" | "confidence" | "needsReview" | "invalid">;
 
@@ -44,6 +44,17 @@ export function validate(raw: RawClassification, segment: string, studio: Studio
   } else {
     invalid.push("shot");
     confidence.shot = 0;
+  }
+
+  const failed = Array.isArray(raw.failed) ? raw.failed : [];
+  if (failed.includes("type")) type = null;
+  if (failed.includes("speakerId")) speakerId = null;
+  if (failed.includes("shot")) shot = null;
+  for (const f of CONFIDENCE_FIELDS) {
+    if (failed.includes(f) && !invalid.includes(f)) {
+      invalid.push(f);
+      confidence[f] = 0;
+    }
   }
 
   const text = typeof raw.text === "string" && raw.text.trim() ? raw.text.trim() : segment;

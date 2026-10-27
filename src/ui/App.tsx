@@ -1,6 +1,7 @@
 import { View } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useRef } from "react";
+import { Footer } from "./Footer";
 import { MonitorView } from "./MonitorView";
 import { StudioView } from "./StudioView";
 import { ScriptPanel } from "./panels/ScriptPanel";
@@ -38,6 +39,7 @@ export function App() {
           </div>
         </div>
       </div>
+      <Footer />
       <Canvas eventSource={root} className="!pointer-events-none !fixed !inset-0" dpr={[1, 2]}>
         <View.Port />
       </Canvas>

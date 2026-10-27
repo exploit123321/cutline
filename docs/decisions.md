@@ -36,11 +36,23 @@ Short, dated notes on choices that are not obvious from the code. Units and axes
 ## Classifier
 - Locked rows are matched to new segments by exact raw text, so they survive edits elsewhere in the script and moves within it.
 - The LLM sees one segment plus the previous 5 rows per call, as the spec asks. That is many small calls. Fixtures run in parallel in `npm run eval`.
-- Unknown speakers: both providers return the unknown name as `speakerId` so validation flags it red, instead of quietly returning `null`.
+- Unknown speakers: mock and llm return the unknown name as `speakerId`, and validation flags it red. Jev cannot return text, so it answers a `noul` ("does this line name a speaker who is not in the cast?"). Above 0.5, the server lists `speakerId` in `failed`, and validation nulls it and flags it red.
+- `RawClassification.failed` lists the fields that a provider could not decide (a missing or malformed answer, an unknown speaker). Validation treats them the same as a field that failed its own checks.
 - Server: `@anthropic-ai/sdk` (the official SDK) with structured output, `effort: "low"` for a short labelling task, and the server-side refusal fallback on models that support it. A refusal or truncated reply becomes a fully flagged row.
 
+## Jev (TypeSafe), read from docs.typesafe.ai on 2026-10-27
+- Endpoint `POST https://api.typesafe.ai/v1/systemone`, `Authorization: Bearer $TYPESAFE_API_KEY`. The official SDK `@typesafe-ai/sdk` 0.7.0 (`TypeSafeClient.systemOne`) reads that key from the environment. The server calls Jev through the SDK.
+- Request: `{ model, state, questions }`. `questions` maps names that we select to `{ type: "choice", instructions, criteria: { option: description } }` or `{ type: "noul", instructions, criteria: { true, false } }`. The model sees the option names and descriptions, but not the question names.
+- Response: `{ model, answers, usage: { input_tokens, output_tokens } }`. A choice answer is `{ choice, confidence, probabilities }`. A noul answer is `{ noul }`, the probability of yes.
+- Model: pinned to `jev-1.14.0` (`TYPESAFE_DEFAULT_MODEL` overrides it), because `jev-latest` moves when a new version ships. Price: $0.042 per million input tokens, output is free. The footer and eval compute the cost from `usage.input_tokens`.
+- Retries: the SDK retries 429, 5xx and connection errors two times by default. We set `maxRetries: 1`, because the spec allows one silent retry at most.
+- State: `{ show, cast, previous_lines, line }`. With no context rows, `previous_lines` is a sentence, not an empty list, because the docs warn that an empty list can read as a signal.
+- `speaker` keeps the spec's `"none"` option. The docs suggest a separate noul for "none of the above". The live probe got "none" right on cues and graphics, so the noul was not necessary.
+- All wording is in `server/jev-questions.ts`. The first eval run got 37 of 37 correct, so no wording was tuned to the fixtures.
+
 ## Dependencies beyond the stack list
-- `@anthropic-ai/sdk`: the official client for the classifier server.
+- `@typesafe-ai/sdk`: the official Jev client (the spec asks for it if it exists).
+- `@anthropic-ai/sdk`: the official client for the llm comparison provider.
 - `@hono/node-server`: runs the hono app on Node.
 - `tsx`: runs the server and `npm run eval` from TypeScript.
 - Dev tooling: `eslint`, `typescript-eslint`, `eslint-plugin-react-hooks`, `globals`, `@vitejs/plugin-react`, `@tailwindcss/vite`, `@types/*`.

@@ -13,14 +13,18 @@ npm run dev          # http://localhost:5173
 
 Press **Load sample**, then **Parse**, then **Play**. The default `mock` classifier is rule-based and works offline.
 
-## Use the LLM classifier
+## Use the Jev classifier
+
+The main classifier is **Jev** by TypeSafe AI, a decision model. Jev does not write text. For each segment it answers four typed questions in one request: the row type, the speaker (a cast id or none), the shot size, and "does this line name a speaker who is not in the cast?". Each answer has a calibrated confidence, and that confidence goes straight into the sheet. Below 0.7, the cell is yellow.
 
 ```bash
-cp .env.example .env         # then put your key in ANTHROPIC_API_KEY
+cp .env.example .env         # then put your key in TYPESAFE_API_KEY
 npm run dev:all              # vite + the classifier server on :8787
 ```
 
-Pick **LLM** in the Classifier switch and press **Parse**. The browser never sees the key: it posts each segment to `server/` (hono), which calls the Anthropic API, checks the reply with zod and returns it. The browser validates it again against the studio (unknown speaker ids, bad enums). `ANTHROPIC_MODEL` overrides the default model.
+If the server has a TypeSafe key, the app selects **Jev**. Otherwise it selects **Mock**. The browser never sees a key. It posts each segment to `server/` (hono), which calls Jev through the official `@typesafe-ai/sdk`. The server checks each answer with zod, and the browser checks the result again against the studio. The footer shows the latency per row and the cost of the last parse. All question wording is in `server/jev-questions.ts`.
+
+The **LLM** provider (Claude, `ANTHROPIC_API_KEY`) is for comparison only, so `npm run eval` can put the two side by side.
 
 ## Scripts
 
@@ -29,12 +33,19 @@ Pick **LLM** in the Classifier switch and press **Parse**. The browser never see
 | `npm run dev` | App only (mock classifier) |
 | `npm run server` | Classifier server on `:8787` (reads `.env`) |
 | `npm run dev:all` | Both |
-| `npm test` | All tests. The live LLM tests run only when `ANTHROPIC_API_KEY` is set, and are skipped otherwise |
-| `npm run test:live` | Only the live LLM tests |
-| `npm run eval` | Classifier accuracy per field on the hand-labelled rundowns, with every mismatch listed. `npm run eval -- --provider llm` for the LLM |
+| `npm test` | All offline tests. No network, no keys |
+| `npm run test:live` | Live tests against Jev and Claude. Each runs only when its key is set |
+| `npm run eval` | Classifier accuracy per field on the hand-labelled rundowns: average latency, total cost, every mismatch, and how many wrong answers review caught versus how many slipped through. `-- --provider jev\|llm\|mock`, or `-- --all`. Each run is saved to `docs/eval/` |
 | `npm run typecheck` / `npm run lint` | strict TypeScript / ESLint |
 
-Mock baseline from `npm run eval`: type 100%, speaker 97.3%, shot 100% over 37 rows. The one miss is on purpose: `she continues:` after a line from Mārtiņš. Rules guess the previous speaker, so the row is flagged yellow. Telling who "she" is needs reading, and that is the job the LLM is there for.
+Results from `npm run eval -- --all` on 37 rows (`docs/eval/`):
+
+| provider | type | speaker | shot | avg ms | cost | caught | slipped |
+|---|---|---|---|---|---|---|---|
+| mock | 100.0% | 97.3% | 100.0% | 0 | n/a | 1 | 0 |
+| jev (jev-1.14.0) | 100.0% | 100.0% | 100.0% | 182 | $0.001642 | 0 | 0 |
+
+The one mock miss is on purpose: `she continues:` after a line from Mārtiņš. Rules guess the previous speaker, so the row is flagged yellow. Jev reads the previous rows and gets the speaker right.
 
 ## How it works
 
@@ -59,10 +70,10 @@ src/model      types, zod schemas, constants (REVIEW_THRESHOLD = 0.7)
 src/geometry   vectors, angles, inView, frontality, fovForShot, lineSide
 src/models     preset adapter (5 cm → m) and presets
 src/engine     cut engine rules and planner
-src/classify   segmenter, mock + llm providers, validation, loop, eval
+src/classify   segmenter, mock + jev + llm providers, text extraction, validation, loop, eval
 src/state      zustand store, edits, CSV export
 src/ui         Script, Sheet, Studio, Monitor, Timeline
 src/fixtures   sample studio (JSON) and rundowns with expected labels
-server/        hono classifier endpoint (Anthropic API)
+server/        hono classifier endpoints: Jev (TypeSafe SDK) and the Anthropic API
 tests/         vitest, mirroring src/; tests/live needs a key
 ```

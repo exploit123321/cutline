@@ -25,7 +25,7 @@ live(`llm provider (${modelName()})`, () => {
   }, 60_000);
 
   it("serves the same through the HTTP endpoint", async () => {
-    const res = await createApp().request("/api/classify", {
+    const res = await createApp().request("/api/classify/llm", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ segment: "[GFX: budget chart full screen]", context: [], studio: talkshow }),

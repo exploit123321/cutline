@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import { segment, type ProviderId } from "../classify";
 import { classifyAll } from "../classify/loop";
-import { llmAvailable, llmClassifyOne } from "../classify/llm";
+import { remoteClassifyOne, serverHealth, type ServerHealth } from "../classify/remote";
 import { mockClassifyOne } from "../classify/mock";
-import type { ClassifyOne } from "../classify/types";
+import type { CallMeta, ClassifyOne } from "../classify/types";
 import { planShow, type Plan, type ShotBlock } from "../engine";
 import { talkshow } from "../fixtures/studios";
 import sample from "../fixtures/rundowns/talkshow-01.txt?raw";
@@ -16,7 +16,10 @@ type State = {
   studio: Studio;
   script: string;
   provider: ProviderId;
-  llmReady: boolean | null;
+  /** which server providers have a key; null until the first check */
+  health: ServerHealth | null;
+  /** speed and cost of the last parse, for the footer */
+  stats: { calls: number; totalMs: number; lastMs: number; costUsd: number | null; model: string | null } | null;
   /** classifier output plus human edits; the engine reads this */
   rows: Row[];
   /** engine output; the UI reads this */
@@ -31,7 +34,7 @@ type State = {
   setScript: (s: string) => void;
   loadSample: () => void;
   setProvider: (p: ProviderId) => void;
-  checkLlm: () => Promise<void>;
+  checkServer: () => Promise<void>;
   parse: () => Promise<void>;
   edit: (rowId: string, e: Edit) => void;
   setReviewOnly: (v: boolean) => void;
@@ -42,13 +45,24 @@ type State = {
 };
 
 const plan = (studio: Studio, rows: Row[]) => planShow({ studio, rows });
-const ONE: Record<ProviderId, ClassifyOne> = { mock: mockClassifyOne, llm: llmClassifyOne };
+const ONE: Record<ProviderId, ClassifyOne> = {
+  mock: mockClassifyOne,
+  jev: remoteClassifyOne("jev"),
+  llm: remoteClassifyOne("llm"),
+};
+
+function addMeta(stats: NonNullable<State["stats"]>, m: CallMeta | undefined): NonNullable<State["stats"]> {
+  if (!m) return stats;
+  const cost = m.costUsd === undefined || m.costUsd === null ? stats.costUsd : (stats.costUsd ?? 0) + m.costUsd;
+  return { calls: stats.calls + 1, totalMs: stats.totalMs + m.ms, lastMs: m.ms, costUsd: cost, model: m.model ?? stats.model };
+}
 
 export const useStore = create<State>()((set, get) => ({
   studio: talkshow,
   script: "",
   provider: "mock",
-  llmReady: null,
+  health: null,
+  stats: null,
   rows: [],
   plan: { rows: [], blocks: [], shots: {} },
   parsing: null,
@@ -61,17 +75,24 @@ export const useStore = create<State>()((set, get) => ({
   setScript: (script) => set({ script }),
   loadSample: () => set({ script: sample }),
   setProvider: (provider) => set({ provider }),
-  checkLlm: async () => set({ llmReady: await llmAvailable() }),
+  checkServer: async () => {
+    const health = await serverHealth();
+    // Jev is the default whenever the server has its key; mock keeps the app working without one
+    set((s) => ({ health, provider: s.health === null && health.jev ? "jev" : s.provider }));
+  },
 
   parse: async () => {
     const { script, studio, provider, rows: previous } = get();
     const segments = segment(script);
     set({ parsing: { done: 0, total: segments.length }, error: null, playing: false });
+    let stats: NonNullable<State["stats"]> = { calls: 0, totalMs: 0, lastMs: 0, costUsd: null, model: null };
     let done = 0;
     // same loop as the Classifier interface, wrapped to report progress per call
     const counted: ClassifyOne = async (input) => {
       try {
-        return await ONE[provider](input);
+        const raw = await ONE[provider](input);
+        stats = addMeta(stats, raw.meta);
+        return raw;
       } finally {
         set({ parsing: { done: ++done, total: segments.length } });
       }
@@ -83,7 +104,8 @@ export const useStore = create<State>()((set, get) => ({
         rows,
         plan: plan(studio, rows),
         time: 0,
-        error: failed && provider === "llm" ? `${failed} segment(s) could not be classified. Is the server running with a key?` : null,
+        stats: stats.calls ? stats : null,
+        error: failed && provider !== "mock" ? `${failed} segment(s) could not be classified. Is the server running with a key?` : null,
       });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
