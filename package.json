@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b --noEmit && vite build",
     "preview": "vite preview",
-    "server": "tsx server/index.ts",
+    "server": "tsx watch server/index.ts",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "test": "vitest run --exclude \"tests/live/**\"",

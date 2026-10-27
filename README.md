@@ -31,7 +31,7 @@ The **LLM** provider (Claude, `ANTHROPIC_API_KEY`) is for comparison only, so `n
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | App only (mock classifier) |
-| `npm run server` | Classifier server on `:8787` (reads `.env`) |
+| `npm run server` | Classifier server on `:8787` (reads `.env`), restarts by itself when server code changes |
 | `npm run dev:all` | Both |
 | `npm test` | All offline tests. No network, no keys |
 | `npm run test:live` | Live tests against Jev and Claude. Each runs only when its key is set |
