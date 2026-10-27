@@ -1,7 +1,6 @@
 import { useRef, type ReactNode } from "react";
 import { blockAt, totalDuration, useStore } from "../../state/store";
 import { timecode } from "../format";
-import { RollingNumber } from "../motion/RollingNumber";
 import { SegmentedControl } from "../motion/SegmentedControl";
 import { cameraColor } from "../scene/colors";
 
@@ -62,7 +61,8 @@ export function Timeline({ big = false }: { big?: boolean }) {
         </button>
       </div>
       <div className="w-[150px] shrink-0">
-        <RollingNumber text={timecode(time)} className="text-[13px] font-semibold text-fg" />
+        {/* plain digits: a timecode changes 25 times a second, too fast to roll */}
+        <div className="num text-[13px] font-semibold text-fg">{timecode(time)}</div>
         <div className="num text-[10.5px] text-fg-3">of {timecode(total)}</div>
       </div>
       <div

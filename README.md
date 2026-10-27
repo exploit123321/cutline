@@ -2,7 +2,7 @@
 
 **AI reads text. Code does geometry.** Cutline turns a messy live-show rundown into a shot list, then plans every cut with a deterministic, unit-tested engine. AI is used in exactly one place: classifying lines of text (dialogue, action, cue…, who speaks, any requested shot size). Camera choice, framing, the 180° rule and cut timing are plain TypeScript functions. Every AI output is validated against a schema, and anything invalid or below 0.7 confidence is flagged for a human instead of being silently accepted.
 
-![Cutline: sample rundown parsed, cut and stepped through](docs/cutline.gif)
+![Cutline Show mode: the sample rundown played back, with the 3D studio, program output and every camera live](docs/cutline.gif)
 
 ## Run it (no API key needed)
 

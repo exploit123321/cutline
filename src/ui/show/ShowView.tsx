@@ -164,7 +164,7 @@ function NowNext() {
         {cutIn !== null && nextCam && (
           <span className="ml-auto flex items-center gap-1.5 text-[11.5px] text-fg-2">
             cut to <span className="font-semibold text-pvw">{nextCam.label}</span> in
-            <RollingNumber text={cutIn.toFixed(1)} className="font-semibold text-fg" />s
+            <span className="num font-semibold text-fg">{cutIn.toFixed(1)}</span>s
           </span>
         )}
       </div>
