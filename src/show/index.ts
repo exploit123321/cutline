@@ -376,9 +376,11 @@ export function wallAt(plan: Plan, t: number): WallContent {
 
 // ---------- Subtitles ----------
 
-/** Broadcast subtitle limits: two lines of at most 42 characters on screen at once. */
-export const SUB_LINE = 42;
-export const SUB_LINES = 2;
+/**
+ * Longest cue on screen at once, in characters. One line: the subtitles are set small
+ * enough that 64 characters fit across the picture, so most cues never wrap.
+ */
+export const SUB_MAX = 64;
 
 export type Subtitle = {
   speakerId: string | null;
@@ -392,29 +394,60 @@ function sentenceCase(text: string): string {
   return text.replace(/(^\s*|[.!?]\s+)(\p{Ll})/gu, (_, gap: string, ch: string) => gap + ch.toUpperCase());
 }
 
-/**
- * Split a line into on-screen cues that fit SUB_LINES × SUB_LINE characters.
- * A cue ends early at a sentence end once it holds at least a third of the space.
- */
-export function subtitleChunks(text: string, max = SUB_LINE * SUB_LINES): string[] {
-  const words = sentenceCase(text.trim()).split(/\s+/).filter(Boolean);
-  const chunks: string[] = [];
+/** Split words into `k` cues of about equal length, so no cue is a two-word orphan. */
+function balance(words: string[], max: number): string[] {
+  const total = words.join(" ").length;
+  const k = Math.ceil(total / max);
+  if (k <= 1) return [words.join(" ")];
+  const target = total / k;
+  const out: string[] = [];
   let cur = "";
   for (const w of words) {
     const next = cur ? `${cur} ${w}` : w;
-    if (cur && next.length > max) {
-      chunks.push(cur);
+    // close the cue at the word that lands nearest the target, while cues remain to fill
+    const full = cur && (next.length > max || cur.length + 1 + w.length / 2 > target);
+    if (full && out.length < k - 1) {
+      out.push(cur);
       cur = w;
     } else {
       cur = next;
     }
-    if (/[.!?]$/.test(cur) && cur.length >= max / 3) {
-      chunks.push(cur);
-      cur = "";
-    }
   }
-  if (cur) chunks.push(cur);
-  return chunks;
+  if (cur) out.push(cur);
+  // a long last word can leave a cue over the limit; pack greedily then
+  return out.every((c) => c.length <= max) ? out : greedy(words, max);
+}
+
+function greedy(words: string[], max: number): string[] {
+  const out: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const next = cur ? `${cur} ${w}` : w;
+    if (cur && next.length > max) {
+      out.push(cur);
+      cur = w;
+    } else cur = next;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
+/**
+ * Split a line into on-screen cues of at most SUB_MAX characters. Cues break at sentence
+ * ends first; a short sentence (under a third of the space) joins the next one instead of
+ * flashing up alone; a sentence too long for one cue splits into cues of equal length.
+ */
+export function subtitleChunks(text: string, max = SUB_MAX): string[] {
+  const sentences = sentenceCase(text.trim())
+    .split(/(?<=[.!?])\s+/)
+    .filter(Boolean);
+  const groups: string[] = [];
+  for (const s of sentences) {
+    const last = groups.at(-1);
+    if (last !== undefined && last.length < max / 3 && `${last} ${s}`.length <= max) groups[groups.length - 1] = `${last} ${s}`;
+    else groups.push(s);
+  }
+  return groups.flatMap((g) => balance(g.split(/\s+/), max));
 }
 
 /** The subtitle on screen at t: the cue of the dialogue line on air, timed by its share of the words. */

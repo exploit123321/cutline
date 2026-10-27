@@ -1,5 +1,5 @@
 import type { Person } from "../model/types";
-import { camerasAt, CORNER, screenAt, strapAt, subtitleAt, type Strap } from "../show";
+import { camerasAt, screenAt, strapAt, subtitleAt, type Strap } from "../show";
 import { blockAt, useStore } from "../state/store";
 import { CameraFeed } from "./CameraFeed";
 import { timecode } from "./format";
@@ -36,7 +36,6 @@ export function MonitorView({ variant = "compact", fit = false }: Props) {
   const wipe = onScreen ? screenWipe(onScreen) : { left: 0, width: 1 };
   // a full screen covers the studio completely once it is in: stop drawing the camera then
   const covered = wipe.width <= 0;
-  const corner = onScreen ? CORNER[onScreen.segment.content.kind] : "none";
 
   return (
     <div className={fit ? "mx-auto" : ""} style={fit ? { width: "min(100cqw, calc(100cqh * 16 / 9))" } : undefined}>
@@ -65,8 +64,6 @@ export function MonitorView({ variant = "compact", fit = false }: Props) {
                 speaker={firstName(studio, sub.speakerId)}
                 colour={speakerColour(studio, sub.speakerId)}
                 text={sub.text}
-                // keep clear of the strap at the left, or of the people's squares
-                area={strap ? "right-of-strap" : corner === "right" ? "left" : corner === "left" ? "right" : "centre"}
               />
             )}
           </>
@@ -97,9 +94,8 @@ const cq = (n: number, floorPx = 0) => (floorPx ? `max(${n * K}cqw, ${floorPx}px
 /**
  * News lower-third, in two tiers: the show block and the name on top, the role on a
  * shorter bar under them from the left edge, both with an angled end. Big Shoulders
- * Display, bars 85% opaque. Low at the left, level with the subtitles, which move to its
- * right while it is up. It wipes on from the left, and goes out with a cut or wipes off as
- * the next phrase starts (`strapAt`).
+ * Display, bars 85% opaque. Low at the left, just above the subtitle line. It wipes on
+ * from the left, and goes out with a cut or wipes off as the next phrase starts (`strapAt`).
  */
 function LowerThird({ person, strap, brand }: { person: Person; strap: Strap; brand: string }) {
   const role = person.role ?? (person.aliases.some((a) => a.toLowerCase() === "host") ? "Host" : "Guest");
@@ -108,7 +104,7 @@ function LowerThird({ person, strap, brand }: { person: Person; strap: Strap; br
   const slant = `polygon(0 0, 100% 0, calc(100% - ${cq(1.4)}) 100%, 0 100%)`;
   return (
     <div
-      className="pointer-events-none absolute bottom-[5.5%] left-[2.5%] z-20 flex flex-col items-start font-strap"
+      className="pointer-events-none absolute bottom-[13%] left-[2.5%] z-20 flex flex-col items-start font-strap"
       style={{ clipPath: `inset(0 ${(1 - open) * 100}% 0 0)` }}
     >
       <div className="flex items-stretch" style={{ height: cq(6.2) }}>
@@ -142,30 +138,17 @@ function LowerThird({ person, strap, brand }: { person: Person; strap: Strap; br
   );
 }
 
-const AREA = {
-  centre: { left: "8%", right: "8%" },
-  "right-of-strap": { left: "30%", right: "4%" },
-  // the squares take the other side
-  left: { left: "3%", right: "44%" },
-  right: { left: "44%", right: "3%" },
-} as const;
-
 /**
- * Burned-in subtitle: "Name: text", the name in the speaker's colour. No box: an outline
- * and a soft shadow keep it readable. Always low; it moves sideways only to stay clear of
- * the strap or the people's squares, and those change only on a cut or a new phrase.
+ * Burned-in subtitle: "Name: text", the name in the speaker's colour. Always centred at the
+ * bottom, on one line in most cases (cues are at most SUB_MAX characters and the type is
+ * sized for that). No outline or box: a soft dark halo keeps it readable, on light screens too.
  */
-function SubtitleLine({ speaker, colour, text, area }: { speaker: string | null; colour: string; text: string; area: keyof typeof AREA }) {
+function SubtitleLine({ speaker, colour, text }: { speaker: string | null; colour: string; text: string }) {
   return (
-    <div className="sub-in pointer-events-none absolute bottom-[6%] z-30 flex justify-center" style={AREA[area]}>
+    <div className="sub-in pointer-events-none absolute inset-x-[5%] bottom-[5%] z-30 flex justify-center">
       <p
-        className="max-w-[44ch] text-center font-semibold leading-[1.25] text-white"
-        style={{
-          fontSize: "clamp(12px, 3.3cqw, 28px)",
-          WebkitTextStroke: "0.12em rgba(0,0,0,0.9)",
-          paintOrder: "stroke fill",
-          textShadow: "0 0.06em 0.3em rgba(0,0,0,0.75)",
-        }}
+        className="text-center font-semibold leading-[1.25] text-white [text-wrap:balance]"
+        style={{ fontSize: "clamp(11px, 2.3cqw, 22px)", textShadow: "0 1px 2px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.85), 0 0 24px rgba(0,0,0,0.65)" }}
       >
         {speaker && <span style={{ color: colour }}>{speaker}: </span>}
         {text}

@@ -21,8 +21,7 @@ import {
   STRAP_MIN,
   cutTimes,
   phraseTimes,
-  SUB_LINE,
-  SUB_LINES,
+  SUB_MAX,
   subtitleAt,
   subtitleChunks,
   wallAt,
@@ -178,11 +177,11 @@ describe("wallAt", () => {
 });
 
 describe("subtitles", () => {
-  it("keeps every cue within two lines of 42 characters", () => {
+  it("keeps every cue to one line of at most SUB_MAX characters", () => {
     const long = Array.from({ length: 40 }, (_, i) => `word${i}`).join(" ");
     const chunks = subtitleChunks(long);
     expect(chunks.length).toBeGreaterThan(1);
-    for (const c of chunks) expect(c.length).toBeLessThanOrEqual(SUB_LINE * SUB_LINES);
+    for (const c of chunks) expect(c.length).toBeLessThanOrEqual(SUB_MAX);
     expect(chunks.join(" ")).toBe(long.replace(/^w/, "W"));
   });
 
@@ -197,6 +196,14 @@ describe("subtitles", () => {
     ]);
     // a short sentence stays with the next one instead of flashing up alone
     expect(subtitleChunks("yes. we know the numbers")).toEqual(["Yes. We know the numbers"]);
+    expect(subtitleChunks("Okay, okay. Focus. Alex, go")).toEqual(["Okay, okay. Focus. Alex, go"]);
+  });
+
+  it("splits a long sentence into cues of about equal length, not a two-word orphan", () => {
+    const chunks = subtitleChunks("Alright, welcome back everyone, we've got quite a bit to get through today");
+    expect(chunks).toHaveLength(2);
+    for (const c of chunks) expect(c.length).toBeGreaterThan(30);
+    expect(chunks.join(" ")).toBe("Alright, welcome back everyone, we've got quite a bit to get through today");
   });
 
   it("shows the line on air with its speaker, and nothing between lines", async () => {

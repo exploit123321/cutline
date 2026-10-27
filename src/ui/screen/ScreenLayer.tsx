@@ -32,9 +32,10 @@ function tint(hex: string): string {
 }
 
 /** Where on the frame the people's squares sit for each corner. */
+/** Corners sit just above the subtitle line, which stays centred at the bottom. */
 const PLACE: Record<Exclude<Corner, "none">, string> = {
-  right: "bottom-[4%] right-[2.5%] flex-row items-end",
-  left: "bottom-[4%] left-[2.5%] flex-row items-end",
+  right: "bottom-[13%] right-[2.5%] flex-row items-end",
+  left: "bottom-[13%] left-[2.5%] flex-row items-end",
   centre: "left-1/2 top-[20%] -translate-x-1/2 flex-col items-center",
 };
 
