@@ -1,0 +1,74 @@
+[
+  {
+    "raw": "[CUT TO WIDE]",
+    "type": "cut",
+    "speakerId": null,
+    "shot": "wide"
+  },
+  {
+    "raw": "ANNA: Welcome back. Before the break Laura raised the regional cuts.",
+    "type": "dialogue",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "Laura: yes, and the ministry still has not answered.",
+    "type": "dialogue",
+    "speakerId": "laura",
+    "shot": null
+  },
+  {
+    "raw": "MARTINS: they did answer, in March.",
+    "type": "dialogue",
+    "speakerId": "martins",
+    "shot": null
+  },
+  {
+    "raw": "she continues: the March answer was two lines long",
+    "type": "dialogue",
+    "speakerId": "laura",
+    "shot": null
+  },
+  {
+    "raw": "close on Martins",
+    "type": "cut",
+    "speakerId": "martins",
+    "shot": "close"
+  },
+  {
+    "raw": "Martins shakes his head",
+    "type": "action",
+    "speakerId": "martins",
+    "shot": null
+  },
+  {
+    "raw": "M: two lines is still an answer",
+    "type": "dialogue",
+    "speakerId": "martins",
+    "shot": null
+  },
+  {
+    "raw": "[SFX: phone ring]",
+    "type": "cue",
+    "speakerId": null,
+    "shot": null
+  },
+  {
+    "raw": "NOTE: keep phone ring under 2 seconds",
+    "type": "note",
+    "speakerId": null,
+    "shot": null
+  },
+  {
+    "raw": "Anna laughs",
+    "type": "action",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "ANNA: we will leave it there",
+    "type": "dialogue",
+    "speakerId": "anna",
+    "shot": null
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "raw": "OPEN on CAM 1 wide, titles",
+    "type": "cue",
+    "speakerId": null,
+    "shot": "wide"
+  },
+  {
+    "raw": "ANNA: tonight a short one. joining us from the newsroom, Pēteris",
+    "type": "dialogue",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "PETERIS: thanks Anna, good to be here",
+    "type": "dialogue",
+    "speakerId": null,
+    "shot": null
+  },
+  {
+    "raw": "Anna turns to camera",
+    "type": "action",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "[GFX: lower third Pēteris Liepa]",
+    "type": "visual",
+    "speakerId": null,
+    "shot": null
+  },
+  {
+    "raw": "anna: what are you hearing tonight",
+    "type": "dialogue",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "PETERIS: that the vote moves to Thursday",
+    "type": "dialogue",
+    "speakerId": null,
+    "shot": null
+  },
+  {
+    "raw": "cut to medium on Anna",
+    "type": "cut",
+    "speakerId": "anna",
+    "shot": "medium"
+  },
+  {
+    "raw": "Anna: Thursday then. Laura, you have a view?",
+    "type": "dialogue",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "LAURA: Thursday suits nobody",
+    "type": "dialogue",
+    "speakerId": "laura",
+    "shot": null
+  },
+  {
+    "raw": "wide on all three",
+    "type": "cut",
+    "speakerId": null,
+    "shot": "wide"
+  },
+  {
+    "raw": "[CUE: closing music]",
+    "type": "cue",
+    "speakerId": null,
+    "shot": null
+  }
+]

@@ -1,0 +1,80 @@
+[
+  {
+    "raw": "OPEN wide on studio, music up",
+    "type": "cue",
+    "speakerId": null,
+    "shot": "wide"
+  },
+  {
+    "raw": "ANNA: Labvakar and welcome back to Evening Desk. tonight we have two guests",
+    "type": "dialogue",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "Anna turns to Mārtiņš",
+    "type": "action",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "anna: Mārtiņš, you said last week the budget is a disaster?",
+    "type": "dialogue",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "M: not a disaster, a missed chance. look at the numbers",
+    "type": "dialogue",
+    "speakerId": "martins",
+    "shot": null
+  },
+  {
+    "raw": "[GFX: budget chart full screen]",
+    "type": "visual",
+    "speakerId": null,
+    "shot": null
+  },
+  {
+    "raw": "Laura laughs",
+    "type": "action",
+    "speakerId": "laura",
+    "shot": null
+  },
+  {
+    "raw": "LAURA - can I jump in here",
+    "type": "dialogue",
+    "speakerId": "laura",
+    "shot": null
+  },
+  {
+    "raw": "cut to close on Laura",
+    "type": "cut",
+    "speakerId": "laura",
+    "shot": "close"
+  },
+  {
+    "raw": "Laura: the numbers hide the regional cuts. nobody talks about that",
+    "type": "dialogue",
+    "speakerId": "laura",
+    "shot": null
+  },
+  {
+    "raw": "back to anna, she nods",
+    "type": "cut",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "Anna — we'll come back to that after the break",
+    "type": "dialogue",
+    "speakerId": "anna",
+    "shot": null
+  },
+  {
+    "raw": "[CUE: break bumper]",
+    "type": "cue",
+    "speakerId": null,
+    "shot": null
+  }
+]
