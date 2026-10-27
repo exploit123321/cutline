@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #0a0c10;
+  --color-ink-900: #0f1217;
+  --color-ink-850: #13171d;
+  --color-ink-800: #181d24;
+  --color-ink-700: #232a33;
+  --color-ink-600: #313a45;
+  --color-ink-500: #4a5562;
+  --color-ink-400: #6b7785;
+  --color-ink-300: #93a0ae;
+  --color-ink-200: #bcc6d0;
+  --color-ink-100: #e2e7ec;
+  --color-tally: #ff3b30;
+  --color-tally-soft: #ff3b3022;
+  --color-review: #e5b400;
+  --color-review-soft: #e5b40026;
+  --color-invalid: #ff5a5f;
+  --color-invalid-soft: #ff5a5f2b;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-ink-950);
+  color: var(--color-ink-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* panels share one heading style: small caps, like labels on a vision mixer */
+.panel-title {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-400);
+  font-weight: 600;
+}

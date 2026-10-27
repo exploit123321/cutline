@@ -1,0 +1,68 @@
+{
+  "id": "evening-desk",
+  "name": "Evening Desk — talk show set",
+  "people": [
+    {
+      "id": "anna",
+      "name": "Anna Bērziņa",
+      "aliases": ["Anna", "host", "A."],
+      "position": { "x": -1.5, "y": 0, "z": 0 },
+      "facingYaw": -120,
+      "eyeHeight": 1.2
+    },
+    {
+      "id": "martins",
+      "name": "Mārtiņš Kalniņš",
+      "aliases": ["Mārtiņš", "Martins", "M"],
+      "position": { "x": 0.5, "y": 0, "z": -0.4 },
+      "facingYaw": 115,
+      "eyeHeight": 1.2
+    },
+    {
+      "id": "laura",
+      "name": "Laura Ozola",
+      "aliases": ["Laura", "L"],
+      "position": { "x": 1.6, "y": 0, "z": 0 },
+      "facingYaw": 115,
+      "eyeHeight": 1.2
+    }
+  ],
+  "cameras": [
+    {
+      "id": "cam1",
+      "label": "CAM 1",
+      "position": { "x": 0, "y": 1.6, "z": 6.5 },
+      "yaw": 0,
+      "pitch": -6,
+      "fovRange": [22, 55],
+      "fixed": true
+    },
+    {
+      "id": "cam2",
+      "label": "CAM 2",
+      "position": { "x": -3.2, "y": 1.4, "z": 4.2 },
+      "yaw": -30,
+      "pitch": -3,
+      "fovRange": [6, 48],
+      "fixed": false
+    },
+    {
+      "id": "cam3",
+      "label": "CAM 3",
+      "position": { "x": 3.2, "y": 1.4, "z": 4.2 },
+      "yaw": 40,
+      "pitch": -3,
+      "fovRange": [6, 48],
+      "fixed": false
+    }
+  ],
+  "props": [
+    { "preset": "rug", "position": { "x": 0, "y": 0, "z": 0 }, "yaw": 0 },
+    { "preset": "armchair", "position": { "x": -1.5, "y": 0, "z": 0 }, "yaw": -120 },
+    { "preset": "armchair", "position": { "x": 0.5, "y": 0, "z": -0.4 }, "yaw": 115 },
+    { "preset": "armchair", "position": { "x": 1.6, "y": 0, "z": 0 }, "yaw": 115 },
+    { "preset": "coffeeTable", "position": { "x": -0.2, "y": 0, "z": 0.7 }, "yaw": 0 },
+    { "preset": "tvScreen", "position": { "x": 0, "y": 0, "z": -2.3 }, "yaw": 180 },
+    { "preset": "backdrop", "position": { "x": 0, "y": 0, "z": -2.8 }, "yaw": 180 }
+  ]
+}
