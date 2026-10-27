@@ -42,7 +42,8 @@ If a task seems to need AI outside the classifier, stop and ask.
 - Validation: `zod`
 - Tests: `vitest`
 - Styling: Tailwind CSS
-- Classifier server: a tiny Node server (`hono`) in `server/`, so API keys never reach the browser. Key read from `.env` (`ANTHROPIC_API_KEY`). Provide `.env.example`.
+- Classifier server: a tiny Node server (`hono`) in `server/`, so API keys never reach the browser. Keys read from `.env`: `TYPESAFE_API_KEY` (for Jev) and optionally `ANTHROPIC_API_KEY` (for the `llm` comparison provider). Provide `.env.example`.
+- Classifier model: **Jev** by TypeSafe AI (see "Classifier" below).
 
 ## Reuse from layout-editor (reference only)
 
@@ -150,8 +151,27 @@ interface Classifier {
 
 Providers, selected in the UI:
 
-1. **`mock`** (default): deterministic rules and keyword matching, no network. The app must fully work with this provider so a reviewer can run it with no API key.
-2. **`llm`**: calls `server/` which calls the Anthropic API. The prompt includes the allowed row types, shot sizes and speaker ids, and asks for JSON only. The server validates with `zod` before returning.
+1. **`jev`** (the main provider): calls `server/`, which calls Jev. See "Jev classifier" below.
+2. **`mock`**: deterministic rules and keyword matching, no network. The app must fully work with this provider so a reviewer without keys can still run it. It is the default only when no Jev key is configured.
+3. **`llm`** (comparison only): calls the Anthropic API with a JSON-only prompt listing the allowed types, shots and speaker ids. Exists so `npm run eval` can compare Jev against a normal LLM on accuracy, speed and cost.
+
+### Jev classifier
+
+Jev is a "decision model": it never writes text. It takes a `state` (text) and named, typed `questions`, and returns for each question a choice with a probability per option and a confidence. That matches this task exactly: every segment needs a few decisions from fixed lists.
+
+- **Access:** directly through TypeSafe's own API, with the author's TypeSafe API key (`TYPESAFE_API_KEY` in `.env`). Use TypeSafe's official SDK if one exists for TypeScript/Node, otherwise its HTTP API. The request has a `state` (array of strings) and named, typed `questions`; responses are keyed by question name.
+- **Before writing the client, read TypeSafe's official API docs** for the endpoint, the auth header, the current model id, and the exact `choice` and `noul` schemas (how options and criteria are passed). Do not guess field names. Record what you found in `docs/decisions.md`. If the docs cannot be reached, stop and ask.
+- **One request per segment, three questions at once:**
+  - `type`: `choice` over the six row types, with a one-line definition of each in the criteria.
+  - `speaker`: `choice` over the studio's person ids plus `"none"`, with each person's name and aliases in the criteria.
+  - `shot`: `choice` over `close`, `medium`, `wide`, `"unspecified"`.
+  - Optional `unknown_speaker`: `noul` ("does this line name a speaker who is not in the cast list?"). If yes with probability > 0.5, set `speakerId = null` and flag the row red.
+- **State:** the cast list, the previous 5 classified rows (as short text), then the current segment. This is the "loop cascade": each row is decided with the rows before it as context.
+- **Text extraction stays deterministic.** Jev cannot return text, so the segmenter strips prefixes like `ANNA:` or `[GFX: ...]` and fills `text`. Jev only decides.
+- **Confidence:** map Jev's confidence for each question straight into `Row.confidence`. Below `REVIEW_THRESHOLD`, the cell is yellow. This is the main reason Jev is used: calibrated confidence decides what a human must check.
+- **Validate** every response with `zod`. Unknown option, missing question or HTTP error → that field is `null`, confidence `0`, `needsReview = true`. Never retry silently more than once.
+- **Speed:** segments are independent except for context, so after the first pass, re-classifying one edited row is a single request. Show the per-row latency, and the cost if the API returns it, in the UI footer.
+- The browser never calls Jev directly. Only `server/` holds the key.
 
 ### Pipeline
 
@@ -162,7 +182,7 @@ Providers, selected in the UI:
 
 ### Evaluation
 
-`npm run eval` runs every fixture in `src/fixtures/rundowns/` through the selected provider and compares against hand-labelled expected rows. Print accuracy per field and list every mismatch. This is how we judge whether a prompt change helped.
+`npm run eval` runs every fixture in `src/fixtures/rundowns/` through the selected provider (`--provider jev|llm|mock`, or `--all`) and compares against hand-labelled expected rows. Print accuracy per field, average latency, total cost, and every mismatch. Also print how many wrong answers had confidence below `REVIEW_THRESHOLD` (caught by review) versus above it (slipped through). Save each run to `docs/eval/` with the date. The Jev vs LLM table is part of the portfolio.
 
 ## Cut engine (deterministic)
 
@@ -219,7 +239,8 @@ Visual style: dark, calm, broadcast-control-room feel. One accent colour for the
 ### Stage 3 — Text to sheet
 - Segmenter, `mock` classifier, validation, the Sheet panel, the classify loop with context, locks.
 - At least 3 sample rundowns in `src/fixtures/rundowns/` (see sample below), with expected labels.
-- `npm run eval` works with the mock provider.
+- The server and the `jev` provider, built from the official API reference.
+- `npm run eval` works with the mock and jev providers.
 - ✅ Pasting the sample produces rows; an unknown speaker is flagged red; editing a cell locks it and survives a re-parse.
 
 ### Stage 4 — Cut engine
@@ -227,7 +248,7 @@ Visual style: dark, calm, broadcast-control-room feel. One accent colour for the
 - ✅ Same input gives identical output twice; a two-person exchange never crosses the line; every row has a reason.
 
 ### Stage 5 — Preview and polish
-- Program monitor, timeline, play, active-row sync, `llm` provider and server.
+- Program monitor, timeline, play, active-row sync, `llm` comparison provider, and a saved `npm run eval -- --all` report.
 - Drag to move people and cameras in the 3D view, re-running the engine live.
 - README with a GIF, how to run, the design rule, and a link to `docs/bug-log.md`.
 - ✅ A reviewer can `npm install && npm run dev`, press "Load sample", "Parse" and "Play", and see a cut sequence with no API key.
