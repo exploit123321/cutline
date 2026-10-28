@@ -35,7 +35,7 @@ function stub(body: unknown) {
 describe("jev questions and state", () => {
   it("asks the spec questions, with the speaker as two questions, in one request", () => {
     const q = jevQuestions(talkshow);
-    expect(Object.keys(q)).toEqual(["type", "speaks", "subject", "shot", "general_advice", "quote_is_line", "unknown_speaker"]);
+    expect(Object.keys(q)).toEqual(["type", "speaks", "subject", "shot", "general_advice", "quote_is_line", "asks_for_shot", "shows_reaction", "unknown_speaker"]);
     expect(Object.keys(q.type.criteria)).toEqual(["dialogue", "action", "visual", "cut", "cue", "note"]);
     for (const k of ["speaks", "subject"] as const) expect(Object.keys(q[k].criteria)).toEqual(["anna", "martins", "laura", NO_PERSON]);
     expect(Object.keys(q.shot.criteria)).toEqual(["close", "medium", "wide", NO_SHOT]);
@@ -161,6 +161,46 @@ describe("jevClassifySegment with a stubbed API", () => {
     const { call } = stub(answers({ type: choice("visual", 0.9), quote_is_line: { type: "noul", noul: 0.05 }, general_advice: { type: "noul", noul: 0.05 } }));
     const out = await jevClassifySegment({ ...req, segment: "Could add labels like “Before” and “After”" }, call);
     expect(out).toMatchObject({ type: "visual", text: "Could add labels like “Before” and “After”" });
+  });
+
+  it("keeps general advice a note even when it quotes example lines", async () => {
+    const seg = "Don't open cold. Instead of “Next topic”, have Anna say “That reminds me…”";
+    const nouls = { general_advice: { type: "noul", noul: 0.85 }, quote_is_line: { type: "noul", noul: 0.95 } };
+    const out = await jevClassifySegment({ ...req, segment: seg }, stub(answers({ type: choice("note", 0.9), ...nouls })).call);
+    expect(out).toMatchObject({ type: "note", text: seg });
+  });
+
+  const noul = (p: number) => ({ type: "noul", noul: p });
+  const moment = (over: Record<string, unknown>) =>
+    answers({ type: choice("note", 0.8), general_advice: noul(0.1), quote_is_line: noul(0.03), subject: choice("laura", 0.9), ...over });
+
+  it("makes a note that asks for a shot a cut, flagged because Jev's answers disagree", async () => {
+    const out = await jevClassifySegment({ ...req, segment: "Maybe start wide on all three" }, stub(moment({ asks_for_shot: noul(0.95) })).call);
+    expect(out).toMatchObject({ type: "cut", confidence: { type: 0.6 } });
+  });
+
+  it("makes a note that shows a reaction an action, with the subject as the speaker", async () => {
+    const out = await jevClassifySegment({ ...req, segment: "Laura could react here" }, stub(moment({ shows_reaction: noul(0.9) })).call);
+    expect(out).toMatchObject({ type: "action", speakerId: "laura" });
+  });
+
+  it("takes the surer of the two when a note asks for a shot and shows a reaction", async () => {
+    const both = moment({ asks_for_shot: noul(0.8), shows_reaction: noul(0.93) });
+    expect((await jevClassifySegment({ ...req, segment: "Laura laughs, stay wide" }, stub(both).call)).type).toBe("action");
+  });
+
+  it("keeps a note when neither answer is sure, or the answers are broken", async () => {
+    const unsure = moment({ asks_for_shot: noul(0.6), shows_reaction: noul(0.25) });
+    expect((await jevClassifySegment(req, stub(unsure).call)).type).toBe("note");
+    const broken = moment({ asks_for_shot: { type: "noul" }, shows_reaction: "yes" });
+    expect((await jevClassifySegment(req, stub(broken).call)).type).toBe("note");
+  });
+
+  it("never moves sure general advice, and never moves a beat that is not a note", async () => {
+    const advice = moment({ general_advice: noul(0.9), asks_for_shot: noul(0.95) });
+    expect((await jevClassifySegment(req, stub(advice).call)).type).toBe("note");
+    const visual = moment({ type: choice("visual", 0.9), asks_for_shot: noul(0.95) });
+    expect((await jevClassifySegment(req, stub(visual).call)).type).toBe("visual");
   });
 
   it("throws on a body that is not a System One response, so the row is flagged", async () => {

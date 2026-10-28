@@ -5,7 +5,7 @@ import type { RawClassification } from "../src/classify/types";
 import { JEV_USD_PER_MTOK, UNKNOWN_SPEAKER_THRESHOLD } from "../src/model/constants";
 import type { ConfidenceField } from "../src/model/types";
 import type { ClassifyRequest } from "./prompt";
-import { ADVICE_NO, ADVICE_YES, jevQuestions, jevState, NO_PERSON, NO_SHOT, QUOTE_YES } from "./jev-questions";
+import { ADVICE_NO, ADVICE_YES, jevQuestions, jevState, MOMENT_YES, MOMENTS, NO_PERSON, NO_SHOT, QUOTE_YES, UNSURE } from "./jev-questions";
 
 /** Pinned, so thresholds tuned on one version do not move when the alias does. */
 export const DEFAULT_JEV_MODEL = "jev-1.14.0";
@@ -42,6 +42,19 @@ const Response = z.object({
 });
 
 /**
+ * The on-air beat that a "note" really is, from the yes/no questions in MOMENTS: briefs
+ * word their moments as suggestions ("maybe start wide"), and `type` often calls those
+ * notes. The surer answer wins. Null when no answer is sure, or none is valid.
+ */
+function onAirBeat(answers: Record<string, unknown>): { type: string; p: number } | null {
+  const hits = MOMENTS.flatMap(([q, type]) => {
+    const a = NoulAnswer.safeParse(answers[q]);
+    return a.success && a.data.noul > MOMENT_YES ? [{ type, p: a.data.noul }] : [];
+  });
+  return hits.sort((a, b) => b.p - a.p)[0] ?? null;
+}
+
+/**
  * One segment in, one classification out. Each answer is checked on its own, so a
  * missing or malformed answer fails only its field. An HTTP error throws, and the
  * classify loop turns that into a fully flagged row (never a silent "no").
@@ -66,8 +79,10 @@ export async function jevClassifySegment(req: ClassifyRequest, systemOne: System
   const shot = pick("shot", "shot");
 
   // The truth table for briefs: Jev judges, code decides.
+  //   general advice             > ADVICE_YES      → note (off air; quotes in it are examples)
   //   quoted words for the cast  > QUOTE_YES       → dialogue, the text is the quoted words
-  //   general advice             > ADVICE_YES      → note (off air)
+  //   type note, but asks for a shot or shows
+  //   a reaction                 > MOMENT_YES      → cut or action (the surer one), flagged
   //   general advice    ADVICE_NO..ADVICE_YES      → Jev's type, flagged for review
   //   otherwise                                    → Jev's type
   const quote = NoulAnswer.safeParse(res.answers.quote_is_line);
@@ -76,15 +91,18 @@ export async function jevClassifySegment(req: ClassifyRequest, systemOne: System
   let rowType: string | null = type?.choice ?? null;
   let typeConfidence = type?.confidence ?? 0;
   let text = extractText(req.segment);
-  if (quote.success && quote.data.noul > QUOTE_YES && quoted) {
+  if (advice.success && advice.data.noul > ADVICE_YES) {
+    rowType = "note";
+    typeConfidence = advice.data.noul;
+  } else if (quote.success && quote.data.noul > QUOTE_YES && quoted) {
     rowType = "dialogue";
     typeConfidence = quote.data.noul;
     text = quoted;
-  } else if (advice.success && advice.data.noul > ADVICE_YES) {
-    rowType = "note";
-    typeConfidence = advice.data.noul;
-  } else if (advice.success && advice.data.noul >= ADVICE_NO) {
-    typeConfidence = Math.min(typeConfidence, 0.6);
+  } else {
+    const beat = rowType === "note" ? onAirBeat(res.answers) : null;
+    // two of Jev's answers disagree, so a human checks the row
+    if (beat) [rowType, typeConfidence] = [beat.type, Math.min(beat.p, UNSURE)];
+    if (advice.success && advice.data.noul >= ADVICE_NO) typeConfidence = Math.min(typeConfidence, UNSURE);
   }
 
   // Dialogue takes who says the words; every other row takes who it shows or describes.

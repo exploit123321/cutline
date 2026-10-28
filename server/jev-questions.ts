@@ -13,13 +13,23 @@ export const NO_PERSON = "none";
 export const NO_SHOT = "unspecified";
 
 /**
- * Thresholds for the brief questions. Above QUOTE_YES the line is dialogue and its text is
- * the quoted words; above ADVICE_YES it is an off-air note; between ADVICE_NO and
- * ADVICE_YES Jev is unsure, so the row is flagged for a human.
+ * Thresholds for the brief questions. Above ADVICE_YES the line is an off-air note; above
+ * QUOTE_YES it is dialogue and its text is the quoted words; between ADVICE_NO and
+ * ADVICE_YES Jev is unsure, so the row is flagged for a human. Above MOMENT_YES a note that
+ * asks for a shot or shows a reaction is that beat (see jev.ts).
  */
 export const QUOTE_YES = 0.7;
 export const ADVICE_YES = 0.7;
 export const ADVICE_NO = 0.3;
+export const MOMENT_YES = 0.7;
+/** The type confidence when Jev's answers disagree, so the row is flagged for review. */
+export const UNSURE = 0.6;
+
+/** Yes/no questions that place a "note" on air, and the beat each one makes it. */
+export const MOMENTS = [
+  ["asks_for_shot", "cut"],
+  ["shows_reaction", "action"],
+] as const;
 
 export function jevState(segment: string, context: ContextRow[], studio: Studio) {
   return {
@@ -77,6 +87,17 @@ export function jevQuestions(studio: Studio) {
     quote_is_line: noul("Does `line` give, in quotes, words that a cast member says on air?", {
       true: "It quotes what a person in `cast` says, such as Jamie: “Wait, click on that.” or Jamie could say “Can we pull that up?”.",
       false: "It has no quoted words for a person in `cast` to say, or the quotes are labels, titles, or an example of what not to say.",
+    }),
+    // A brief words its moments as suggestions, and `type` often calls them notes. These two
+    // name what is on air. A third, for screens, was tried and dropped: briefs give much
+    // advice about screens, and it said yes to that advice.
+    asks_for_shot: noul("Does `line` ask for a camera shot or a camera move at this point in the show?", {
+      true: "It names a shot or a move for this moment, such as a wide of everyone, a close-up of one person, or a slow zoom, even when it is worded as a suggestion.",
+      false: "It names no shot for this moment, or it gives a rule about shots for the whole show, such as how often to switch cameras.",
+    }),
+    shows_reaction: noul("Does `line` describe a cast member doing something visible at this point, without speaking?", {
+      true: 'A visible action at this moment, such as laughing, nodding or turning, even when it is worded as a suggestion, such as "maybe the host shrugs here".',
+      false: "Nobody does a visible action at this moment, or the line is about what someone says.",
     }),
     unknown_speaker: noul("Does `line` name a speaker who is not in `cast`?", {
       true: "The line starts with a speaker name, such as \"PETER:\", that matches nobody in `cast`.",
