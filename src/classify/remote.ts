@@ -5,12 +5,12 @@ import type { ClassifyOne, RawClassification, ServerProvider } from "./types";
  * which holds the API keys. Errors propagate; the loop turns them into rows flagged red.
  */
 export function remoteClassifyOne(provider: ServerProvider): ClassifyOne {
-  return async ({ segment, context, studio }) => {
+  return async ({ segment, context, studio, onScreen = null }) => {
     const t0 = performance.now();
     const res = await fetch(`/api/classify/${provider}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ segment, context, studio }),
+      body: JSON.stringify({ segment, context, studio, onScreen }),
     });
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };

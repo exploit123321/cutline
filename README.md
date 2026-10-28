@@ -15,7 +15,7 @@ Press **Load sample** (pick *Evening Desk*, a talk show, or *Late Line*, three h
 
 ## Use the Jev classifier
 
-The main classifier is **Jev** by TypeSafe AI, a decision model. Jev does not write text. For each segment it answers nine typed questions in one request: the row type, who says the words, who the line shows, the shot size, whether the line names a speaker who is not in the cast, whether it is advice for the whole show, whether it quotes words a cast member says, whether it asks for a shot, and whether it shows a reaction. Code combines the answers into the row. Each answer has a calibrated confidence, and that confidence goes into the sheet. Below 0.7, the cell is yellow.
+The main classifier is **Jev** by TypeSafe AI, a decision model. Jev does not write text. For each segment it answers ten typed questions in one request: the row type, who says the words, who the line shows, the shot size, whether the line names a speaker who is not in the cast, whether it is advice for the whole show, whether it quotes words a cast member says, whether it asks for a shot, whether it shows a reaction, and whether it brings up something new on screen. With the line, Jev gets the cast, the five rows before it, and the shared screen on air, which the loop tracks. Code combines the answers into the row. Each answer has a calibrated confidence, and that confidence goes into the sheet. Below 0.7, the cell is yellow.
 
 ```bash
 cp .env.example .env         # then put your key in TYPESAFE_API_KEY
@@ -43,14 +43,16 @@ Results from `npm run eval -- --all` on 248 rows: three scripted rundowns, the *
 | provider | type | speaker | shot | avg ms | cost | caught | slipped | flagged but right |
 |---|---|---|---|---|---|---|---|---|
 | mock | 75.8% | 89.5% | 96.4% | 0 | n/a | 45 | 50 | 54 |
-| jev (jev-1.14.0) | 89.9% | 93.5% | 98.4% | 178 | $0.017519 | 24 | 21 | 43 |
+| jev (jev-1.14.0) | 93.5% | 93.1% | 98.0% | 183 | $0.019038 | 22 | 16 | 56 |
 
 On the 91 scripted rows, Jev gets every answer right. Mock misses two of them: `she continues:` after a line from Mārtiņš (rules guess the previous speaker, so the row is flagged yellow), and an opening shot that rules read as a cue. All other misses are in the briefs, where both providers must tell advice from moments in the show:
 
 | brief | rows | Jev type | mock type | Jev speaker | mock speaker |
 |---|---|---|---|---|---|
-| `brief-01` (the brief rules were tuned on it) | 71 | 87% | 65% | 94% | 92% |
-| `brief-02` (held out: labelled before Jev saw it) | 86 | 81% | 60% | 86% | 78% |
+| `brief-01` | 71 | 92% | 65% | 93% | 92% |
+| `brief-02` | 86 | 88% | 60% | 86% | 78% |
+
+Each brief was used to tune some rules and to check others. `brief-02` was labelled before Jev saw it, and it confirmed the rules tuned on `brief-01`. Then the screen rule was tuned on `brief-02` and confirmed on `brief-01` (see `docs/decisions.md`).
 
 ## How it works
 

@@ -27,10 +27,15 @@ export type RawClassification = {
 /** The previous rows a provider sees, trimmed to what matters for continuity. */
 export type ContextRow = Pick<Row, "type" | "speakerId" | "text" | "shot">;
 
+/** The shared screen on air before a row: the visual row's text, and how many rows back it came up. */
+export type OnScreen = { text: string; linesAgo: number };
+
 export type ClassifyOne = (input: {
   segment: string;
   context: ContextRow[];
   studio: Studio;
+  /** null when the studio cameras are on air; a provider may ignore it */
+  onScreen?: OnScreen | null;
 }) => Promise<RawClassification>;
 
 export interface Classifier {

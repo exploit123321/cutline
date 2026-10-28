@@ -35,7 +35,7 @@ function stub(body: unknown) {
 describe("jev questions and state", () => {
   it("asks the spec questions, with the speaker as two questions, in one request", () => {
     const q = jevQuestions(talkshow);
-    expect(Object.keys(q)).toEqual(["type", "speaks", "subject", "shot", "general_advice", "quote_is_line", "asks_for_shot", "shows_reaction", "unknown_speaker"]);
+    expect(Object.keys(q)).toEqual(["type", "speaks", "subject", "shot", "general_advice", "quote_is_line", "asks_for_shot", "shows_reaction", "new_screen", "unknown_speaker"]);
     expect(Object.keys(q.type.criteria)).toEqual(["dialogue", "action", "visual", "cut", "cue", "note"]);
     for (const k of ["speaks", "subject"] as const) expect(Object.keys(q[k].criteria)).toEqual(["anna", "martins", "laura", NO_PERSON]);
     expect(Object.keys(q.shot.criteria)).toEqual(["close", "medium", "wide", NO_SHOT]);
@@ -57,6 +57,14 @@ describe("jev questions and state", () => {
     expect(Object.keys(s.cast)).toEqual(["anna", "martins", "laura"]);
     expect(s.previous_lines).toEqual(["dialogue | anna | one", "dialogue | laura | two"]);
     expect(s.line).toBe("she continues");
+  });
+
+  it("tells Jev which shared screen is on air, or that none is", () => {
+    expect(jevState("x", [], talkshow, { text: "chart | Budget", linesAgo: 2 }).on_screen).toBe(
+      "This shared screen is on air, brought up 2 lines before `line`: “chart | Budget”",
+    );
+    expect(jevState("x", [], talkshow, { text: "chart", linesAgo: 1 }).on_screen).toContain("brought up 1 line before");
+    expect(jevState("x", [], talkshow).on_screen).toBe("No shared screen is on air: the studio cameras are.");
   });
 
   it("says in words when there is no context, instead of sending an empty list", () => {
@@ -201,6 +209,37 @@ describe("jevClassifySegment with a stubbed API", () => {
     expect((await jevClassifySegment(req, stub(advice).call)).type).toBe("note");
     const visual = moment({ type: choice("visual", 0.9), asks_for_shot: noul(0.95) });
     expect((await jevClassifySegment(req, stub(visual).call)).type).toBe("visual");
+  });
+
+  describe("while a screen is on air", () => {
+    const onScreen = { text: "article | Night buses", linesAgo: 2 };
+    const visual = (fresh?: number) =>
+      answers({ type: choice("visual", 0.95), general_advice: noul(0.05), ...(fresh === undefined ? {} : { new_screen: noul(fresh) }) });
+    const run = (body: unknown, on: typeof onScreen | null = onScreen) =>
+      jevClassifySegment({ ...req, segment: "Maybe zoom in on the headline", onScreen: on }, stub(body).call);
+
+    it("sends the screen in the state", async () => {
+      const { call, sent } = stub(visual(0.9));
+      await jevClassifySegment({ ...req, onScreen }, call);
+      expect((sent[0]?.state as { on_screen: string }).on_screen).toContain("Night buses");
+    });
+
+    it("makes a visual that brings up nothing new a note, flagged", async () => {
+      expect(await run(visual(0.1))).toMatchObject({ type: "note", confidence: { type: 0.6 } });
+    });
+
+    it("keeps a visual that is unsure about being new, flagged", async () => {
+      expect(await run(visual(0.5))).toMatchObject({ type: "visual", confidence: { type: 0.6 } });
+    });
+
+    it("keeps a new screen as it is", async () => {
+      expect(await run(visual(0.9))).toMatchObject({ type: "visual", confidence: { type: 0.95 } });
+    });
+
+    it("ignores the answer when no screen is on air, or when it is missing", async () => {
+      expect((await run(visual(0.1), null)).type).toBe("visual");
+      expect((await run(visual())).type).toBe("visual");
+    });
   });
 
   it("throws on a body that is not a System One response, so the row is flagged", async () => {

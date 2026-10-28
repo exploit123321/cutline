@@ -1,5 +1,5 @@
 import { choice, noul } from "@typesafe-ai/sdk";
-import type { ContextRow } from "../src/classify/types";
+import type { ContextRow, OnScreen } from "../src/classify/types";
 import type { Studio } from "../src/model/types";
 
 /**
@@ -22,6 +22,9 @@ export const QUOTE_YES = 0.7;
 export const ADVICE_YES = 0.7;
 export const ADVICE_NO = 0.3;
 export const MOMENT_YES = 0.7;
+/** While a screen is on air, a visual below NEW_SCREEN_NO is a detail of it (a note). */
+export const NEW_SCREEN_NO = 0.3;
+export const NEW_SCREEN_YES = 0.7;
 /** The type confidence when Jev's answers disagree, so the row is flagged for review. */
 export const UNSURE = 0.6;
 
@@ -31,7 +34,8 @@ export const MOMENTS = [
   ["shows_reaction", "action"],
 ] as const;
 
-export function jevState(segment: string, context: ContextRow[], studio: Studio) {
+export function jevState(segment: string, context: ContextRow[], studio: Studio, onScreen: OnScreen | null = null) {
+  const lines = onScreen?.linesAgo === 1 ? "line" : "lines";
   return {
     show: "A rundown for a live TV talk show. Each line is one beat: someone speaks, acts, or the crew gets a direction.",
     cast: Object.fromEntries(
@@ -42,6 +46,10 @@ export function jevState(segment: string, context: ContextRow[], studio: Studio)
       ? context.map((r) => `${r.type ?? "?"} | ${r.speakerId ?? "nobody"} | ${r.text}`)
       : "This is the first line of the rundown.",
     line: segment,
+    // a fact code knows (engine rule 9), so Jev need not work it out from five lines
+    on_screen: onScreen
+      ? `This shared screen is on air, brought up ${onScreen.linesAgo} ${lines} before \`line\`: “${onScreen.text}”`
+      : "No shared screen is on air: the studio cameras are.",
   };
 }
 
@@ -98,6 +106,11 @@ export function jevQuestions(studio: Studio) {
     shows_reaction: noul("Does `line` describe a cast member doing something visible at this point, without speaking?", {
       true: 'A visible action at this moment, such as laughing, nodding or turning, even when it is worded as a suggestion, such as "maybe the host shrugs here".',
       false: "Nobody does a visible action at this moment, or the line is about what someone says.",
+    }),
+    // read only while a screen is on air: a brief goes on about the screen that is up
+    new_screen: noul("Does `line` bring up something new on screen, other than what `on_screen` shows?", {
+      true: "A new graphic, picture, clip, website or poll comes up at this moment, even when it is worded as a suggestion.",
+      false: "It is about what `on_screen` already shows: how it looks or is laid out, or an action on it such as a pause, a zoom, a replay or a highlight.",
     }),
     unknown_speaker: noul("Does `line` name a speaker who is not in `cast`?", {
       true: "The line starts with a speaker name, such as \"PETER:\", that matches nobody in `cast`.",

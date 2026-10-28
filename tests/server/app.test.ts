@@ -60,6 +60,15 @@ describe("classifier server", () => {
     expect(await (await post(app, body, "llm")).json()).toEqual(good);
   });
 
+  it("passes the screen on air through to the provider", async () => {
+    let got: unknown;
+    const app = createApp({ jev: { hasKey: () => true, classify: async (r) => ((got = r.onScreen), good) } });
+    const onScreen = { text: "chart | Budget", linesAgo: 2 };
+    expect((await post(app, { ...body, onScreen }, "jev")).status).toBe(200);
+    expect(got).toEqual(onScreen);
+    expect((await post(app, { ...body, onScreen: { text: "x", linesAgo: 0 } }, "jev")).status).toBe(400);
+  });
+
   it("maps provider errors to 502", async () => {
     const failing = createApp({
       llm: {

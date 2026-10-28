@@ -1,6 +1,6 @@
 import { CLASSIFY_CONTEXT } from "../model/constants";
 import type { Row, Studio } from "../model/types";
-import type { ClassifyOne, Classifier, ContextRow } from "./types";
+import type { ClassifyOne, Classifier, ContextRow, OnScreen } from "./types";
 import { failedClassification, validate } from "./validate";
 
 function hash(s: string): string {
@@ -14,6 +14,20 @@ export function emptyEngineFields(): Pick<Row, "cameraId" | "fov" | "start" | "d
 }
 
 const toContext = (r: Row): ContextRow => ({ type: r.type, speakerId: r.speakerId, text: r.text, shot: r.shot });
+
+/**
+ * The shared screen on air after these rows, by engine rule 9: a visual row puts its
+ * screen up, and a cut or a cue ends it. A screen often lasts longer than the context
+ * window, so the loop tells the provider itself.
+ */
+export function screenOnAir(rows: Row[]): OnScreen | null {
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i] as Row;
+    if (r.type === "cut" || r.type === "cue") return null;
+    if (r.type === "visual") return { text: r.text, linesAgo: rows.length - i };
+  }
+  return null;
+}
 
 /**
  * Classify segments in order. Each call sees the previous CLASSIFY_CONTEXT rows so
@@ -38,7 +52,7 @@ export async function classifyAll(
     const context = rows.slice(-CLASSIFY_CONTEXT).map(toContext);
     let fields;
     try {
-      fields = validate(await classifyOne({ segment: seg, context, studio }), seg, studio);
+      fields = validate(await classifyOne({ segment: seg, context, studio, onScreen: screenOnAir(rows) }), seg, studio);
     } catch {
       fields = failedClassification(seg);
     }

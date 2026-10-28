@@ -17,6 +17,7 @@ export const ClassifyRequestSchema = z.object({
     )
     .max(10),
   studio: StudioSchema,
+  onScreen: z.object({ text: z.string().max(4000), linesAgo: z.number().int().min(1) }).nullable().optional(),
 });
 export type ClassifyRequest = z.infer<typeof ClassifyRequestSchema>;
 

@@ -5,7 +5,20 @@ import type { RawClassification } from "../src/classify/types";
 import { JEV_USD_PER_MTOK, UNKNOWN_SPEAKER_THRESHOLD } from "../src/model/constants";
 import type { ConfidenceField } from "../src/model/types";
 import type { ClassifyRequest } from "./prompt";
-import { ADVICE_NO, ADVICE_YES, jevQuestions, jevState, MOMENT_YES, MOMENTS, NO_PERSON, NO_SHOT, QUOTE_YES, UNSURE } from "./jev-questions";
+import {
+  ADVICE_NO,
+  ADVICE_YES,
+  jevQuestions,
+  jevState,
+  MOMENT_YES,
+  MOMENTS,
+  NEW_SCREEN_NO,
+  NEW_SCREEN_YES,
+  NO_PERSON,
+  NO_SHOT,
+  QUOTE_YES,
+  UNSURE,
+} from "./jev-questions";
 
 /** Pinned, so thresholds tuned on one version do not move when the alias does. */
 export const DEFAULT_JEV_MODEL = "jev-1.14.0";
@@ -63,7 +76,7 @@ export async function jevClassifySegment(req: ClassifyRequest, systemOne: System
   const t0 = performance.now();
   const body = await systemOne({
     model: jevModel(),
-    state: jevState(req.segment, req.context, req.studio),
+    state: jevState(req.segment, req.context, req.studio, req.onScreen ?? null),
     questions: jevQuestions(req.studio),
   });
   const ms = Math.round(performance.now() - t0);
@@ -83,6 +96,9 @@ export async function jevClassifySegment(req: ClassifyRequest, systemOne: System
   //   quoted words for the cast  > QUOTE_YES       → dialogue, the text is the quoted words
   //   type note, but asks for a shot or shows
   //   a reaction                 > MOMENT_YES      → cut or action (the surer one), flagged
+  //   type visual, a screen is on air,
+  //   and something new comes up < NEW_SCREEN_NO   → note (a detail of that screen), flagged
+  //                     NEW_SCREEN_NO..NEW_SCREEN_YES → visual, flagged
   //   general advice    ADVICE_NO..ADVICE_YES      → Jev's type, flagged for review
   //   otherwise                                    → Jev's type
   const quote = NoulAnswer.safeParse(res.answers.quote_is_line);
@@ -102,6 +118,11 @@ export async function jevClassifySegment(req: ClassifyRequest, systemOne: System
     const beat = rowType === "note" ? onAirBeat(res.answers) : null;
     // two of Jev's answers disagree, so a human checks the row
     if (beat) [rowType, typeConfidence] = [beat.type, Math.min(beat.p, UNSURE)];
+    const fresh = NoulAnswer.safeParse(res.answers.new_screen);
+    if (rowType === "visual" && req.onScreen && fresh.success && fresh.data.noul <= NEW_SCREEN_YES) {
+      if (fresh.data.noul < NEW_SCREEN_NO) rowType = "note";
+      typeConfidence = Math.min(typeConfidence, UNSURE);
+    }
     if (advice.success && advice.data.noul >= ADVICE_NO) typeConfidence = Math.min(typeConfidence, UNSURE);
   }
 

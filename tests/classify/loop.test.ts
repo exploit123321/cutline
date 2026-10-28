@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { classifyAll } from "../../src/classify/loop";
+import { classifyAll, screenOnAir } from "../../src/classify/loop";
 import { mockClassifyOne } from "../../src/classify/mock";
 import { segment } from "../../src/classify/segment";
-import type { ClassifyOne, ContextRow } from "../../src/classify/types";
+import type { ClassifyOne, ContextRow, OnScreen } from "../../src/classify/types";
+import type { Row } from "../../src/model/types";
 import { talkshow } from "../../src/fixtures/studios";
 import { readFileSync } from "node:fs";
 
@@ -58,5 +59,31 @@ describe("classify loop", () => {
     expect(seen).toHaveLength(13);
     // and the next call saw the human's correction in its context
     expect(seen[5]?.at(-1)?.speakerId).toBe("laura");
+  });
+});
+
+describe("screenOnAir", () => {
+  const row = (type: Row["type"], text = type ?? "") => ({ type, text }) as Row;
+
+  it("is the last visual row, counted back from the row to come", () => {
+    expect(screenOnAir([row("visual", "chart | Budget"), row("dialogue"), row("note")])).toEqual({ text: "chart | Budget", linesAgo: 3 });
+    expect(screenOnAir([row("dialogue"), row("visual", "poll")])).toEqual({ text: "poll", linesAgo: 1 });
+  });
+
+  it("ends on a cut or a cue, and a newer visual replaces it (engine rule 9)", () => {
+    expect(screenOnAir([row("visual"), row("cut")])).toBeNull();
+    expect(screenOnAir([row("visual"), row("cue"), row("dialogue")])).toBeNull();
+    expect(screenOnAir([row("visual", "one"), row("action"), row("visual", "two")])?.text).toBe("two");
+    expect(screenOnAir([])).toBeNull();
+  });
+
+  it("is passed to the provider for each row", async () => {
+    const seen: (OnScreen | null | undefined)[] = [];
+    const spy: ClassifyOne = async (input) => {
+      seen.push(input.onScreen);
+      return mockClassifyOne(input);
+    };
+    await classifyAll(["[GFX: budget chart]", "ANNA: look at this", "cut to wide"], talkshow, spy);
+    expect(seen).toEqual([null, { text: "budget chart", linesAgo: 1 }, { text: "budget chart", linesAgo: 2 }]);
   });
 });
