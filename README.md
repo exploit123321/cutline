@@ -38,14 +38,19 @@ The **LLM** provider (Claude, `ANTHROPIC_API_KEY`) is for comparison only, so `n
 | `npm run eval` | Classifier accuracy per field and per fixture on the hand-labelled rundowns: average latency, total cost, every mismatch, how many wrong answers review caught versus how many slipped through, and a calibration table (answers grouped by score, with how many are right). `-- --provider jev\|llm\|mock`, or `-- --all`. Each run is saved to `docs/eval/` |
 | `npm run typecheck` / `npm run lint` | strict TypeScript / ESLint |
 
-Results from `npm run eval -- --all` on 162 rows: three scripted rundowns, the *Late Line* sample, and a director's brief written as prose (`docs/eval/`):
+Results from `npm run eval -- --all` on 248 rows: three scripted rundowns, the *Late Line* sample, and two directors' briefs written as prose (`docs/eval/`):
 
 | provider | type | speaker | shot | avg ms | cost | caught | slipped | flagged but right |
 |---|---|---|---|---|---|---|---|---|
-| mock | 84.0% | 95.7% | 97.5% | 0 | n/a | 20 | 17 | 26 |
-| jev (jev-1.14.0) | 94.4% | 97.5% | 98.8% | 179 | $0.011416 | 9 | 6 | 22 |
+| mock | 75.8% | 89.5% | 96.4% | 0 | n/a | 45 | 50 | 54 |
+| jev (jev-1.14.0) | 89.9% | 93.5% | 98.4% | 178 | $0.017519 | 24 | 21 | 43 |
 
-On the 91 scripted rows, Jev gets every answer right. Mock misses two of them: `she continues:` after a line from Mārtiņš (rules guess the previous speaker, so the row is flagged yellow), and an opening shot that rules read as a cue. All other misses are in the brief, where both providers must tell advice from moments in the show. There, Jev gets the type right on 87% of rows and mock on 65%.
+On the 91 scripted rows, Jev gets every answer right. Mock misses two of them: `she continues:` after a line from Mārtiņš (rules guess the previous speaker, so the row is flagged yellow), and an opening shot that rules read as a cue. All other misses are in the briefs, where both providers must tell advice from moments in the show:
+
+| brief | rows | Jev type | mock type | Jev speaker | mock speaker |
+|---|---|---|---|---|---|
+| `brief-01` (the brief rules were tuned on it) | 71 | 87% | 65% | 94% | 92% |
+| `brief-02` (held out: labelled before Jev saw it) | 86 | 81% | 60% | 86% | 78% |
 
 ## How it works
 

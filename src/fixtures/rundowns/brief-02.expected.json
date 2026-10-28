@@ -1,0 +1,521 @@
+{
+  "studio": "late-line",
+  "rows": [
+    {
+      "raw": "Maybe this broadcast starts a little differently, instead of the usual introduction, have Jamie already talking when the broadcast goes live. Alex is looking at something on the computer, Sam is just sitting there listening, and Jamie says something like “I'm telling you, there's no way that's actually true.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Camera starts on all three, maybe a slightly wider angle so it looks like the conversation was already happening before the audience joined.",
+      "type": "cut",
+      "speakerId": null,
+      "shot": "wide"
+    },
+    {
+      "raw": "Alex looks up and says “You do realize we're live right now?”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Jamie: “Wait, seriously?”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Sam: “Yeah, we've been live for like ten seconds.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Could be a funny opening, but don't make it too exaggerated. After that Alex welcomes everyone and explains what they're going to be talking about.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe today the whole idea is that the three of them are looking through different things they've found online, discussing them and deciding whether they're actually interesting, believable, or just completely ridiculous.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Start with Alex saying “Alright, I've actually got something I want you both to see.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Have the camera switch to Alex's close-up, then cut to the computer screen. The screen takes up almost the entire broadcast, with the three hosts appearing in a small rectangular camera window in the bottom-right corner.",
+      "type": "visual",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Alex opens an image or website, maybe something unusual that immediately gets a reaction.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Jamie: “There's absolutely no way.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Sam: “Can you zoom in? I can't even tell what I'm looking at.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Alex zooms in, but maybe too far, so Jamie says “Okay, not that much.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Could be a nice little natural moment. Maybe leave a second or two where nobody says anything and they're all looking at the screen.",
+      "type": "action",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Need the screen layout to look clean, not just a messy browser window. Maybe crop out the bookmarks and unnecessary tabs, but still show enough to make it clear they're browsing something.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "When Alex is explaining the image, maybe briefly highlight the relevant area with a yellow rectangle or circle. Nothing too dramatic.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe use a split-screen layout at certain points, especially if Jamie wants to compare what Alex is showing with something else.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Sam could say “Actually, I found another version of this earlier.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Then switch to two images side by side, one labelled “Original” and the other “Comparison,” and have the hosts' camera at the bottom between them or in the top-right corner.",
+      "type": "visual",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe Jamie starts pointing out differences and Alex keeps zooming into the wrong section.",
+      "type": "action",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Sam: “No, the other side.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Alex: “You could've just said left.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Jamie: “We've been looking at the wrong part for thirty seconds.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "After that, return to a full studio shot. Maybe leave the laughter in rather than cutting immediately.",
+      "type": "cut",
+      "speakerId": null,
+      "shot": "wide"
+    },
+    {
+      "raw": "Could have Jamie introduce the next thing without a formal transition. Something like “Okay, since we're showing random things now, I've got one that's actually pretty interesting.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Camera 2 on Jamie. Maybe Jamie turns a laptop toward the others, but obviously the audience can't see it properly, so switch to the screen feed.",
+      "type": "visual",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "This time instead of an article, it's a short video. The video takes up most of the screen, while the hosts appear in the bottom-left corner. Maybe put a thin white border around their camera and a subtle shadow so it doesn't cover the video too much.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Jamie: “Watch what happens near the end.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Play the clip. The hosts can still talk quietly, maybe a few comments, but make sure the original audio remains understandable.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Sam: “Wait, was that supposed to happen?”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Jamie: “Just keep watching.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Maybe pause right before the interesting moment, then Sam complains because Jamie stopped it too early.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Could zoom in on the paused frame for emphasis, then resume.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe after the video ends, keep the final frame on screen for a few seconds while they discuss it. Don't immediately go back to the studio because someone might want to refer to something visible.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Alex: “Okay, I need to see that again.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Replay only the relevant part, maybe at half speed if possible.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Then switch back to all three, and let them discuss whether they agree about what happened.",
+      "type": "cut",
+      "speakerId": null,
+      "shot": "wide"
+    },
+    {
+      "raw": "At some point Sam should have a longer moment to lead the conversation, since Alex and Jamie have already shown their things.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe Sam says “Alright, mine's a little different. I actually want to see what you two think before I explain anything.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Sam brings up a graph, a screenshot of some statistics, or maybe a map with several marked locations.",
+      "type": "visual",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Full-screen screen share again, but perhaps change the layout this time. Put the hosts in a small vertical camera panel on the left and the graph or map on the right, so viewers can still see their expressions.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Sam: “So, just looking at this, what would you assume is happening?”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Jamie gives an answer, Alex disagrees, and Sam lets them argue for a bit before revealing the explanation.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe use some simple animated highlights on the graph as Sam explains the different parts, one at a time.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Need to be careful with the text size here. If the screen contains a lot of small labels, zoom in or recreate the key information with bigger text.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Alex: “Oh, wait, that actually changes everything.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Jamie: “I still think my answer made sense.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Sam: “Sure, if you ignore half the graph.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Maybe switch to a close-up of Jamie reacting, then immediately back to a wide shot when everyone laughs.",
+      "type": "action",
+      "speakerId": "jamie",
+      "shot": "close"
+    },
+    {
+      "raw": "Could introduce another visual later where the screen is divided into three areas, with one showing the shared content and two smaller camera views. Not sure if that would be too crowded though. Might be better to keep the three hosts in the same camera window.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe during one of the discussions, Alex pulls up a live search to fact-check something Jamie said.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Alex: “No, I'm actually looking that up right now.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Jamie: “You don't have to fact-check everything I say.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Sam: “Considering what you've said today, I think we do.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Show the browser search results while Alex scrolls through them. Keep the hosts visible in the corner, perhaps at the top-right so the search results aren't covered.",
+      "type": "visual",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe highlight the source they're using and briefly show the page itself. Could even have a little text overlay with the name of the source.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Need to avoid exposing random personal information, notifications, or unrelated tabs while screen sharing. Probably best to prepare a separate browser window for the broadcast.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "After a while, maybe move into a short section where they read viewer comments or questions.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Alex: “Alright, let's see what people have been saying.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Bring up a few comments one at a time, appearing in a large card in the center of the screen, with the hosts in the bottom corner.",
+      "type": "visual",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Jamie reads the first comment aloud, Sam responds, Alex reacts.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe some comments are funny, others ask actual questions. Don't make every single one a joke.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "At one point Jamie could say “Okay, that's actually a good question.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Switch back to the studio for a more serious explanation, maybe close-up on whoever is answering.",
+      "type": "cut",
+      "speakerId": null,
+      "shot": "close"
+    },
+    {
+      "raw": "Could show a related screenshot halfway through their answer, and then return to the studio again.",
+      "type": "visual",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Near the end, maybe Alex says “Before we finish, I want to go back to the first thing we showed.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Bring up that original image again, but this time show it beside something else they discovered during the broadcast.",
+      "type": "visual",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Jamie: “Oh, now that makes a lot more sense.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Sam: “That's literally what I've been saying since the beginning.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Maybe give each person a chance to share their final opinion, but don't formally announce it like a debate.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Alex goes first, Jamie responds, Sam closes the conversation.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Could use a slow camera move across all three while they're wrapping up. Maybe no screen sharing for the last minute, just keep the studio view.",
+      "type": "cut",
+      "speakerId": null,
+      "shot": "wide"
+    },
+    {
+      "raw": "Jamie: “I think the main thing we've learned today is that Alex takes everything way too seriously.”",
+      "type": "dialogue",
+      "speakerId": "jamie",
+      "shot": null
+    },
+    {
+      "raw": "Alex: “And Jamie apparently believes everything on the internet.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Sam: “And somehow I'm the only reasonable person here.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "Maybe all three laugh and Alex starts the outro.",
+      "type": "action",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Something like “Anyway, that's all we've got for today. Thanks for hanging out with us, and we'll see you next time.”",
+      "type": "dialogue",
+      "speakerId": "alex",
+      "shot": null
+    },
+    {
+      "raw": "Could have Sam add “Hopefully with better evidence next time.”",
+      "type": "dialogue",
+      "speakerId": "sam",
+      "shot": null
+    },
+    {
+      "raw": "The closing music begins quietly, maybe the broadcast logo appears in the center while the studio shot slowly becomes smaller.",
+      "type": "cue",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Actually, perhaps end on a wide shot of all three still talking casually, then fade into a full-screen outro. No need for an elaborate closing animation.",
+      "type": "cut",
+      "speakerId": null,
+      "shot": "wide"
+    },
+    {
+      "raw": "Need to prepare all the visual materials beforehand, at least the main images, videos, comparison screenshots, and graph. The live search could be spontaneous, but the important content should already be ready.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Maybe keep four or five different scene presets in the broadcast software: full studio, screen share with corner camera, side-by-side comparison, video playback with host reactions, and viewer comments.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Don't necessarily use them in a fixed order. Switch whenever the conversation calls for it.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Make sure the hosts know when they're about to appear in the corner. They shouldn't suddenly start looking confused because they don't know what the audience is seeing.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Could have a small monitor facing them showing the actual broadcast output, so they know whether they're full-screen or in the corner.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    },
+    {
+      "raw": "Overall, this one should feel a bit more playful and spontaneous than the previous broadcast. Less like they're presenting prepared stories and more like three people discovering, questioning, and reacting to things together, while the visuals become part of the actual conversation.",
+      "type": "note",
+      "speakerId": null,
+      "shot": null
+    }
+  ]
+}
